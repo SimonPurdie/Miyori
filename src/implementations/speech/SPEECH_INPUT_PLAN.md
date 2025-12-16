@@ -32,7 +32,6 @@ def listen(self) -> str | None:
     # Try to recognize: text = self.recognizer.recognize_google(audio)
     # Print f"You said: {text}"
     # Return text
-    # If any exception occurs, return None
 ```
 
 ## Interface Contract

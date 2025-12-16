@@ -30,13 +30,5 @@ class GoogleSpeechInput(ISpeechInput):
                 print(f"You said: {text}")
                 return text
         except Exception as e:
-            # Plan says "If any exception occurs, return None" and "No error handling (let exceptions bubble up)"
-            # Wait, plan says "If any exception occurs, return None" in step 4.
-            # But Design Rules #2 says "No error handling this phase (let exceptions bubble up)".
-            # I will follow Step 4 explicitly: "If any exception occurs, return None" seems to contradict "let bubbles up" if we catch generic Exception.
-            # However, `recognize_google` raises UnknownValueError if unintelligible. Returning None is better for the loop.
-            # Let's follow the code snippet logic in the plan if it was explicit.
-            # Plan Step 4: "# If any exception occurs, return None"
-            # So I will catch and return None.
-            # print(f"Error listening: {e}")
+            
             return None

@@ -52,10 +52,10 @@ def generate(self, prompt: str) -> str:
 ## Design Rules
 
 1. **All implementations read from config.json** (in root)
-2. **No error handling this phase** (let exceptions bubble up)
+2. **No error handling this phase unless explicitly stated**
 3. **Use print() for output** (no logging framework)
 4. **Full type hints everywhere**
-5. **Each implementation folder has IMPLEMENTATION.md with specific instructions**
+5. **Each implementation folder contains a file ending in _PLAN.md with specific instructions**
 6. **main.py just wires components together**
 
 ## Implementation Order
