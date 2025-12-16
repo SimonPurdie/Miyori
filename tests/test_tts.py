@@ -41,6 +41,10 @@ def test_tts():
             print(f"Received Chunk {i+1}: '{text}' (after {delay_ms}ms delay)")
             tts.speak(text)
             
+        print("Waiting for speech to finish...")
+        if hasattr(tts, 'pipeline'):
+            tts.pipeline.wait_for_completion()
+
         print("TTS Test Completed.")
     except Exception as e:
         print(f"Error during TTS: {e}")
