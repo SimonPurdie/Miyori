@@ -14,14 +14,27 @@ def test_llm():
         print(f"Failed to initialize backend: {e}")
         return
 
-    prompt = "Hello! Please reply with 'Test successful'."
+    prompt = "tell me a story"
     print(f"\nSending prompt: '{prompt}'")
     print("-" * 20)
     
+    import time
+    
+    # Use a list to be mutable in the inner function
+    last_chunk_time = [0.0]
+
     def on_chunk(text):
-        print(text, end="", flush=True)
+        current_time = time.time()
+        if last_chunk_time[0] != 0.0:
+            diff_ms = (current_time - last_chunk_time[0]) * 1000
+            print(f"[{diff_ms:.0f}ms] {text}", end="", flush=True)
+        else:
+            # First chunk
+            print(f"[First chunk] {text}", end="", flush=True)
+        last_chunk_time[0] = current_time
 
     try:
+        last_chunk_time[0] = time.time() # Start timing right before the call
         backend.generate_stream(prompt, on_chunk)
         print("\n" + "-" * 20)
         print("LLM Test Completed.")
