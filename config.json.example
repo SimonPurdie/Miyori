@@ -1,6 +1,7 @@
 {
   "speech_input": {
     "pause_threshold": 2.0,
+    "active_listen_timeout": 30,
     "energy_threshold": 300,
     "porcupine_access_key": "YOUR_PICOVOICE_ACCESS_KEY",
     "keyword_paths": [],

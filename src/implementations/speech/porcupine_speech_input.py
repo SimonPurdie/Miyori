@@ -49,27 +49,29 @@ class PorcupineSpeechInput(ISpeechInput):
         
         # For Google ASR fallback
         self.recognizer = sr.Recognizer()
+        self.non_speaking_duration = 5.0
         self.pause_threshold = speech_config.get("pause_threshold", 2.0)
         self.energy_threshold = speech_config.get("energy_threshold", 300)
         
         print(f"Porcupine initialized. Keywords: {self.keyword_paths if self.keyword_paths else self.keywords}")
 
-    def listen(self) -> str | None:
+    def listen(self, require_wake_word: bool = True) -> str | None:
         """
         Listens for wake word, then captures command for ASR.
         """
         try:
-            # 1. Wait for Wake Word
-            print("\nWaiting for wake word...")
-            while True:
-                pcm = self.audio_stream.read(self.porcupine.frame_length, exception_on_overflow=False)
-                pcm = struct.unpack_from("h" * self.porcupine.frame_length, pcm)
-                
-                keyword_index = self.porcupine.process(pcm)
-                
-                if keyword_index >= 0:
-                    print("Wake word detected!")
-                    break
+            # 1. Wait for Wake Word (if required)
+            if require_wake_word:
+                print("\nWaiting for wake word...")
+                while True:
+                    pcm = self.audio_stream.read(self.porcupine.frame_length, exception_on_overflow=False)
+                    pcm = struct.unpack_from("h" * self.porcupine.frame_length, pcm)
+                    
+                    keyword_index = self.porcupine.process(pcm)
+                    
+                    if keyword_index >= 0:
+                        print("Wake word detected!")
+                        break
             
             # 2. Release PyAudio stream to let SpeechRecognition take over
             self.audio_stream.stop_stream()

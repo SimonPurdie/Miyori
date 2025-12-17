@@ -18,7 +18,7 @@ class GoogleSpeechInput(ISpeechInput):
         self.recognizer.pause_threshold = speech_config.get("pause_threshold", 2.0)
         self.recognizer.energy_threshold = speech_config.get("energy_threshold", 300)
 
-    def listen(self) -> str | None:
+    def listen(self, require_wake_word: bool = True) -> str | None:
         try:
             with sr.Microphone() as source:
                 print("Calibrating microphone...")
