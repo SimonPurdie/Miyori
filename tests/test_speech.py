@@ -4,16 +4,14 @@ import os
 # Add project root to path so we can import src
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
+from src.interfaces.speech_input import ISpeechInput
 from src.implementations.speech.google_speech_input import GoogleSpeechInput
 
-def test_speech():
-    print("Initializing GoogleSpeechInput...")
-    try:
-        speech_input = GoogleSpeechInput()
-    except Exception as e:
-        print(f"Failed to initialize speech input: {e}")
-        return
-
+def run_speech_test(speech_input: ISpeechInput):
+    """
+    Test the Speech Input interface.
+    This function interacts strictly with the ISpeechInput interface.
+    """
     print("\n--- Speech Test ---")
     print("Please speak into your microphone...")
     
@@ -26,5 +24,14 @@ def test_speech():
         print("No speech detected or error occurred.")
     print("Speech Test Completed.")
 
+def main():
+    try:
+        speech_input = GoogleSpeechInput()
+    except Exception as e:
+        print(f"Failed to initialize speech input: {e}")
+        return
+
+    run_speech_test(speech_input)
+
 if __name__ == "__main__":
-    test_speech()
+    main()

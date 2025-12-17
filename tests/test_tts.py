@@ -6,16 +6,14 @@ import time
 # Add project root to path so we can import src
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
+from src.interfaces.speech_output import ISpeechOutput
 from src.implementations.tts.pyttsx_output import PyttsxOutput
 
-def test_tts():
-    print("Initializing PyttsxOutput...")
-    try:
-        tts = PyttsxOutput()
-    except Exception as e:
-        print(f"Failed to initialize TTS: {e}")
-        return
-
+def run_tts_test(tts: ISpeechOutput):
+    """
+    Test the Speech Output interface.
+    This function interacts strictly with the ISpeechOutput interface.
+    """
     # Load test data
     json_path = os.path.join(os.path.dirname(__file__), 'tts_test_text.json')
     print(f"Loading test data from: {json_path}")
@@ -42,12 +40,28 @@ def test_tts():
             tts.speak(text)
             
         print("Waiting for speech to finish...")
-        if hasattr(tts, 'pipeline'):
-            tts.pipeline.wait_for_completion()
+        print("All chunks sent to TTS. Keeping process alive for 30s to allow playback...")
+        print("Press Ctrl+C to exit early.")
+        
+        try:
+            start_wait = time.time()
+            while time.time() - start_wait < 30:
+                time.sleep(0.1)
+        except KeyboardInterrupt:
+            print("\nExited early by user.")
 
         print("TTS Test Completed.")
     except Exception as e:
         print(f"Error during TTS: {e}")
 
+def main():
+    try:
+        tts = PyttsxOutput()
+    except Exception as e:
+        print(f"Failed to initialize TTS: {e}")
+        return
+
+    run_tts_test(tts)
+
 if __name__ == "__main__":
-    test_tts()
+    main()

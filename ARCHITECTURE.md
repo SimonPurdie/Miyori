@@ -22,7 +22,7 @@ graph TD
         Brain
     end
     
-    subgraph Implementations [src/implementations]
+    subgraph Implementations [src/implementations]  
         GoogleSpeech[GoogleSpeechInput] -.-> Inputs
         Pyttsx[PyttsxOutput] -.-> Outputs
         GoogleAI[GoogleAIBackend] -.-> Brain
