@@ -4,15 +4,19 @@ from pathlib import Path
 from src.interfaces.speech_input import ISpeechInput
 from src.interfaces.speech_output import ISpeechOutput
 from src.interfaces.llm_backend import ILLMBackend
+from src.core.tool_registry import ToolRegistry
+from typing import Dict, Any
 
 class VoiceAssistant:
     def __init__(self, 
                  speech_input: ISpeechInput,
                  speech_output: ISpeechOutput,
-                 llm: ILLMBackend):
+                 llm: ILLMBackend,
+                 tool_registry: ToolRegistry = None): # NEW
         self.speech_input = speech_input
         self.speech_output = speech_output
         self.llm = llm
+        self.tool_registry = tool_registry # NEW
         
         # Load config for active listen timeout
         self.active_listen_timeout = 30
@@ -63,7 +67,34 @@ class VoiceAssistant:
             def speak_chunk(chunk: str) -> None:
                 self.speech_output.speak(chunk)
             
-            # Use streaming for real-time TTS
-            self.llm.generate_stream(text, speak_chunk)
+            # Use streaming or tool-enabled generation
+            if self.tool_registry and self.tool_registry.get_all():
+                self._handle_with_tools(text, speak_chunk)
+            else:
+                self.llm.generate_stream(text, speak_chunk)
         
         print("Miyori shutting down...")
+
+    def _handle_with_tools(self, user_input: str, on_chunk: Callable[[str], None]) -> None:
+        """Handle user input with tool support."""
+        
+        def on_tool_call(tool_name: str, parameters: Dict[str, Any]) -> str:
+            """Execute tool and return result."""
+            print(f"🔧 AI requested tool: {tool_name}")
+            print(f"   Parameters: {parameters}")
+            
+            result = self.tool_registry.execute(tool_name, **parameters)
+            print(f"✓ Tool result: {result[:100]}...")
+            
+            return result
+        
+        # Get all registered tools
+        tools = self.tool_registry.get_all()
+        
+        # Generate response with tool support
+        self.llm.generate_stream_with_tools(
+            prompt=user_input,
+            tools=tools,
+            on_chunk=on_chunk,
+            on_tool_call=on_tool_call
+        )

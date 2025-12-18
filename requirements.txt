@@ -7,3 +7,5 @@ pvcheetah
 kokoro
 sounddevice
 numpy
+requests
+beautifulsoup4
