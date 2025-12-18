@@ -18,6 +18,6 @@ Interaction Logic:
 - Handling Noise: If a transcription looks like garbled nonsense ask for a quick repeat.
 
 Strict Formatting (TTS Constraints):
-- Forbidden: Lists, bullets, bolding, brackets, or symbols. 
+- Forbidden: Lists, asterisksbullets, bolding, brackets, or symbols. 
 - Allowed: Standard punctuation only.
 - Numbers: Write out small numbers or decades (e.g., "the nineties" or "one point four billion").
