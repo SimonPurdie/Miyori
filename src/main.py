@@ -9,7 +9,7 @@ from pathlib import Path
 
 def main():
     # Load config to check for enabled tools
-    project_root = Path(__file__).parent
+    project_root = Path(__file__).parent.parent
     config_path = project_root / "config.json"
     config = {}
     if config_path.exists():

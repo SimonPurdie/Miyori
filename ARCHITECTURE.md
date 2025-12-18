@@ -9,7 +9,7 @@ Miyori is a modular voice assistant built in Python. The system follows a clean 
 
 ```mermaid
 graph TD
-    Main[main.py] --> Config[config.json]
+    Main[src/main.py] --> Config[config.json]
     Main --> Assistant[VoiceAssistant]
     
     Assistant --> Inputs[ISpeechInput]
@@ -50,7 +50,7 @@ graph TD
 To minimize latency, the system is designed for streaming. The `ILLMBackend.generate_stream` method takes a callback `on_chunk`. The assistant passes a callback that immediately sends text chunks to the TTS engine (`ISpeechOutput.speak`).
 
 ### Dependency Injection
-The `VoiceAssistant` class does not instantiate its dependencies. They are passed in via the constructor in `main.py`. This allows for easy swapping of implementations (e.g., testing vs. production).
+The `VoiceAssistant` class does not instantiate its dependencies. They are passed in via the constructor in `src/main.py`. This allows for easy swapping of implementations (e.g., testing vs. production).
 
 ## Extension Points
 
@@ -59,7 +59,7 @@ To replace a component (e.g., swapping Google Speech for Whisper):
 1.  Create a new directory in `src/implementations/speech/whisper/`.
 2.  Create a class that implements `ISpeechInput`.
 3.  Add necessary config keys to `config.json`.
-4.  Update `main.py` to instantiate your new class and pass it to the assistant.
+4.  Update `src/main.py` to instantiate your new class and pass it to the assistant.
 The same pattern applies for:
    - `ISpeechInput` in `src/implementations/speech/`
    - `ISpeechOutput` in `src/implementations/tts/`
