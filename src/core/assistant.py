@@ -78,16 +78,23 @@ class VoiceAssistant:
 
     def _handle_with_tools(self, user_input: str, on_chunk: Callable[[str], None]) -> None:
         """Handle user input with tool support."""
+        from src.utils import logger
         
         def on_tool_call(tool_name: str, parameters: Dict[str, Any]) -> str:
             """Execute tool and return result."""
             print(f"🔧 AI requested tool: {tool_name}")
             print(f"   Parameters: {parameters}")
             
-            result = self.tool_registry.execute(tool_name, **parameters)
-            print(f"✓ Tool result: {result[:100]}...")
+            with logger.capture_session() as buffer:
+                result = self.tool_registry.execute(tool_name, **parameters)
+                logs = buffer.getvalue().strip()
             
-            return result
+            if logs:
+                print(f"✓ Tool result: {result[:100]}...")
+                return f"TOOL LOGS:\n{logs}\n\nTOOL RESULT:\n{result}"
+            else:
+                print(f"✓ Tool result: {result[:100]}...")
+                return result
         
         # Get all registered tools
         tools = self.tool_registry.get_all()
