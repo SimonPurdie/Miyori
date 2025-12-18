@@ -4,7 +4,7 @@ cd /d %~dp0
 
 if not exist .venv (
     echo Virtual environment .venv not found.
-    echo Please create it first using: python -m venv .venv
+    echo Please create it first using: py 3.11 -m venv .venv
     pause
     exit /b
 )

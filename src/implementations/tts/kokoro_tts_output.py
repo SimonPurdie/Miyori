@@ -26,6 +26,7 @@ def _kokoro_worker(text_queue, audio_queue, pipeline, voice, speed):
                 break
             
             logging.info(f"Synthesizing: {item}")
+            print(f"TTS: {item}", flush=True)
             
             # Generate audio
             # pipeline returns a generator of (graphemes, phonemes, audio)
