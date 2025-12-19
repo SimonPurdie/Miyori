@@ -11,6 +11,7 @@ from src.utils.logger import setup_logging
 from src.utils.config import Config
 
 def main():
+    Config.load()
     setup_logging()
             
     speech_input = PorcupineSpeechInput()
