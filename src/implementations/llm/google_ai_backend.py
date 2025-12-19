@@ -98,25 +98,23 @@ class GoogleAIBackend(ILLMBackend):
             # Phase 2: Memory Gating
             if self.feature_flags.get("enable_gating", False):
                 if not await self.gate.should_remember(user_msg, assistant_msg):
-                    print("Turn skipped by Memory Gate.")
+                    print("Memory: Turn skipped by Gate.")
                     return
 
+            print(f"Memory: Summarizing turn...")
             summary = await self.summarizer.create_summary(user_msg, assistant_msg)
             full_text = {"user": user_msg, "assistant": assistant_msg}
+            
+            print(f"Memory: Storing episode...")
             await self.episodic_manager.add_episode(summary, full_text)
+            print(f"Memory: Episode stored successfully.")
             
             # Phase 3: Emotional Continuity
             self.emotional_tracker.update_thread(user_msg, assistant_msg)
             
-            # Phase 3: Simple Consolidation Trigger (every 10 turns)
-            # In a production app, this would be a scheduled task
-            if self.store.get_relational_memories("interaction_style"):
-                # Just a way to check frequency without adding more state to backend
-                pass 
-                
         except Exception as e:
             import sys
-            sys.stderr.write(f"Error storing turn: {e}\n")
+            sys.stderr.write(f"Memory Error: Failure in _store_turn: {e}\n")
 
     def reset_context(self) -> None:
         """Resets the conversation history."""
@@ -219,6 +217,7 @@ class GoogleAIBackend(ILLMBackend):
 
         max_turns = 10
         turn_count = 0
+        full_response = []
 
         try:
             # First turn: Send user prompt
@@ -233,6 +232,7 @@ class GoogleAIBackend(ILLMBackend):
                 if response.candidates and response.candidates[0].content.parts:
                     for part in response.candidates[0].content.parts:
                         if part.text:
+                            full_response.append(part.text)
                             on_chunk(part.text)
                         
                         if part.function_call:
@@ -255,12 +255,8 @@ class GoogleAIBackend(ILLMBackend):
                     response = self.chat.send_message(tool_response_parts)
                 else:
                     # No more tool calls in this response, we are finished
-                    # Store turn asynchronously (approximate for tools)
                     if self.memory_enabled:
-                        # Re-calculate the final assistant text if possible or just use a placeholder
-                        # For now, we'll store the original prompt and let it be
-                        # In a more advanced version, we'd track the full assistant response including tool outcomes
-                        pass
+                        self._run_async(self._store_turn(prompt, "".join(full_response)))
                     break
 
             if turn_count >= max_turns:

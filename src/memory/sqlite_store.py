@@ -114,6 +114,13 @@ class SQLiteMemoryStore(IMemoryStore):
                 episode_data.get('status', 'pending_embedding')
             ))
             conn.commit()
+        
+        from src.utils.memory_logger import memory_logger
+        memory_logger.log_event("db_add_episode", {
+            "id": episode_id,
+            "summary": episode_data.get('summary', '')[:50] + "...",
+            "status": episode_data.get('status', 'pending_embedding')
+        })
         return episode_id
 
     def get_episode(self, episode_id: str) -> Optional[Dict[str, Any]]:
@@ -152,6 +159,13 @@ class SQLiteMemoryStore(IMemoryStore):
             cursor = conn.cursor()
             cursor.execute(query, tuple(values))
             conn.commit()
+            
+            from src.utils.memory_logger import memory_logger
+            memory_logger.log_event("db_update_episode", {
+                "id": episode_id,
+                "updates": list(updates.keys()),
+                "success": cursor.rowcount > 0
+            })
             return cursor.rowcount > 0
 
     def search_episodes(self, query_embedding: List[float], limit: int = 5, status: str = 'active') -> List[Dict[str, Any]]:
@@ -195,7 +209,16 @@ class SQLiteMemoryStore(IMemoryStore):
             
         # Sort by similarity and return top N
         results.sort(key=lambda x: x['similarity'], reverse=True)
-        return results[:limit]
+        final_results = results[:limit]
+
+        from src.utils.memory_logger import memory_logger
+        memory_logger.log_event("db_search_episodes", {
+            "status": status,
+            "total_candidates": len(results),
+            "returned_count": len(final_results),
+            "top_similarity": final_results[0]['similarity'] if final_results else 0
+        })
+        return final_results
 
     def add_semantic_fact(self, fact_data: Dict[str, Any]) -> str:
         fact_id = fact_data.get('id') or str(uuid.uuid4())

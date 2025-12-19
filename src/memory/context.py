@@ -118,18 +118,30 @@ class ContextBuilder:
             # Optional sections
             remaining = self.token_budget - tokens_used
             if remaining <= 0:
+                from src.utils.memory_logger import memory_logger
+                memory_logger.log_event("context_skip", {"label": label, "reason": "budget_exhausted"})
                 break
                 
             if section_tokens <= remaining:
                 context_parts.append(section_text)
                 tokens_used += section_tokens
+                from src.utils.memory_logger import memory_logger
+                memory_logger.log_event("context_section", {"label": label, "tokens": section_tokens, "status": "full"})
             else:
                 # Partial inclusion
                 if remaining > 50: # Minimum useful space
                     truncated = truncate_to_budget(section_text, remaining)
                     if truncated.strip():
                         context_parts.append(truncated + "\n\n")
-                        tokens_used += count_tokens_approx(truncated + "\n\n")
+                        added_tokens = count_tokens_approx(truncated + "\n\n")
+                        tokens_used += added_tokens
+                        from src.utils.memory_logger import memory_logger
+                        memory_logger.log_event("context_section", {"label": label, "tokens": added_tokens, "status": "truncated"})
+                else:
+                    from src.utils.memory_logger import memory_logger
+                    memory_logger.log_event("context_skip", {"label": label, "reason": "budget_too_low"})
                 break
-                
+        
+        from src.utils.memory_logger import memory_logger
+        memory_logger.log_event("context_build_complete", {"total_tokens": tokens_used})
         return "".join(context_parts).strip()

@@ -25,6 +25,11 @@ class EmbeddingQueue:
         # Queue for embedding
         await self.queue.put((episode_id, episode_data['summary']))
         
+        memory_logger.log_event("embedding_queued", {
+            "id": episode_id,
+            "text_len": len(episode_data['summary'])
+        })
+        
         # Start processor if not running
         if not self.processing:
             asyncio.create_task(self._process_queue())
@@ -48,9 +53,11 @@ class EmbeddingQueue:
                     'embedding': embedding_blob,
                     'status': 'active'
                 })
+                memory_logger.log_event("embedding_success", {"id": episode_id})
             except Exception as e:
                 import sys
                 sys.stderr.write(f"Embedding failed for {episode_id}: {e}\n")
+                memory_logger.log_event("embedding_failed", {"id": episode_id, "error": str(e)}, level="INFO")
         self.processing = False
 
 class EpisodicMemoryManager:
@@ -111,6 +118,14 @@ class EpisodicMemoryManager:
             relevance = (similarity * 0.5) + (decayed_importance * 0.3) + (recency_weight * 0.2)
             mem['relevance_score'] = relevance
             reranked.append(mem)
+            
+            memory_logger.log_event("retrieval_ranking_item", {
+                "id": mem['id'],
+                "similarity": round(similarity, 3),
+                "decayed_importance": round(decayed_importance, 3),
+                "recency": round(recency_weight, 3),
+                "relevance": round(relevance, 3)
+            })
             
         # 3. Sort and return top N
         reranked.sort(key=lambda x: x['relevance_score'], reverse=True)
