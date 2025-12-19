@@ -2,12 +2,13 @@ from google import genai
 import json
 from typing import List, Dict, Any
 from src.interfaces.memory import IMemoryStore
+from src.utils.config import Config
 
 class SemanticExtractor:
     def __init__(self, client: genai.Client, store: IMemoryStore):
         self.client = client
         self.store = store
-        self.model_name = "gemini-1.5-flash"
+        self.model_name = Config.data.get("memory", {}).get("semantic_model")
 
     async def extract_facts_batched(self, episodes: List[Dict[str, Any]]):
         """Extract semantic facts from a batch of episodic summaries."""

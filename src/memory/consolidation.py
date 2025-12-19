@@ -3,6 +3,7 @@ import json
 from typing import List, Dict, Any
 from src.interfaces.memory import IMemoryStore
 from src.memory.deep_layers import SemanticExtractor, EmotionalTracker
+from src.utils.config import Config
 
 class RelationalManager:
     def __init__(self, client: genai.Client, store: IMemoryStore):
@@ -31,7 +32,7 @@ Updated Relational Data (JSON):"""
             import asyncio
             loop = asyncio.get_running_loop()
             response = await loop.run_in_executor(None, lambda: self.client.models.generate_content(
-                model="gemini-1.5-flash",
+                model= Config.data.get("memory", {}).get("relational_model"),
                 contents=prompt
             ))
             # Expecting JSON response or similar
