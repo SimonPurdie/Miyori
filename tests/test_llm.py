@@ -8,7 +8,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from src.interfaces.llm_backend import ILLMBackend
 from src.implementations.llm.google_ai_backend import GoogleAIBackend
 
-def run_llm_test(backend: ILLMBackend, prompt: str = "tell me a story"):
+def run_llm_test(backend: ILLMBackend, prompt: str = "this is a test of the LLM backend interface. Is it working correctly?"):
     """
     Test the LLM backend interface.
     This function interacts strictly with the ILLMBackend interface.
@@ -33,7 +33,10 @@ def run_llm_test(backend: ILLMBackend, prompt: str = "tell me a story"):
         last_chunk_time[0] = time.time() # Start timing right before the call
         backend.generate_stream(prompt, on_chunk)
         print("\n" + "-" * 20)
+        time.sleep(3) # Wait a bit to ensure async output is done
         print("LLM Test Completed.")
+        
+
     except Exception as e:
         print(f"\nError during generation: {e}")
 

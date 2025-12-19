@@ -19,6 +19,7 @@ def main():
     print("\nTurn 2: Recalling fruits.")
     backend.generate_stream("What are the fruits?", on_chunk)
     print("\n" + "-"*20)
+    time.sleep(3) # Wait a bit to ensure async output is done
 
 if __name__ == "__main__":
     main()
