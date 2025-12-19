@@ -2,17 +2,13 @@ from google import genai
 import json
 from pathlib import Path
 from typing import List
+from src.utils.config import Config
 
 class EmbeddingService:
     def __init__(self):
-        project_root = Path(__file__).parent.parent.parent
-        config_path = project_root / "config.json"
-        
-        with open(config_path, 'r') as f:
-            config = json.load(f)
             
-        llm_config = config.get("llm", {})
-        memory_config = config.get("memory", {})
+        llm_config = Config.data.get("llm", {})
+        memory_config = Config.data.get("memory", {})
         
         self.api_key = llm_config.get("api_key")
         self.model_name = memory_config.get("embedding_model", "text-embedding-004")

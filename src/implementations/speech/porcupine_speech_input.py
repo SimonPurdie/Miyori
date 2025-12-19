@@ -7,16 +7,11 @@ import pyaudio
 import pvporcupine
 import pvcheetah
 from src.interfaces.speech_input import ISpeechInput
+from src.utils.config import Config
 
 class PorcupineSpeechInput(ISpeechInput):
     def __init__(self):
-        # Load config
-        config_path = Path(__file__).parent.parent.parent.parent / "config.json"
-        
-        with open(config_path, 'r') as f:
-            config = json.load(f)
-            
-        speech_config = config.get("speech_input", {})
+        speech_config = Config.data.get("speech_input", {})
         self.access_key = speech_config.get("porcupine_access_key")
         
         if not self.access_key:

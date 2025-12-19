@@ -1,17 +1,13 @@
 from google import genai
 import json
 from pathlib import Path
+from src.utils.config import Config
 
 class Summarizer:
     def __init__(self, client: genai.Client = None):
         self.client = client
+        llm_config = Config.data.get("llm", {})
         if not self.client:
-            # Load config to initialize client if not provided
-            project_root = Path(__file__).parent.parent.parent
-            config_path = project_root / "config.json"
-            with open(config_path, 'r') as f:
-                config = json.load(f)
-            llm_config = config.get("llm", {})
             api_key = llm_config.get("api_key")
             if api_key:
                 self.client = genai.Client(api_key=api_key)
@@ -19,11 +15,7 @@ class Summarizer:
                 print("Warning: API Key not found for Summarizer")
         
         # Use a cheap/fast model for summarization
-        project_root = Path(__file__).parent.parent.parent
-        config_path = project_root / "config.json"
-        with open(config_path, 'r') as f:
-            config = json.load(f)
-        self.model_name = config.get("llm", {}).get("model", "gemini-1.5-flash-8b") # Use 8b if possible for speed/cost
+        self.model_name = llm_config.get("summarizer_model")
 
     async def create_summary(self, user_msg: str, assistant_msg: str) -> str:
         """Create a semantic summary of the exchange using the LLM."""

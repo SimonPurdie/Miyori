@@ -33,7 +33,8 @@ Assistant: {assistant_msg}
 
 Answer with only 'YES' or 'NO':"""
 
-        try:
+        try:            
+            print("Memory Gate: Evaluating with LLM...")
             import asyncio
             loop = asyncio.get_running_loop()
             response = await loop.run_in_executor(None, lambda: self.client.models.generate_content(
@@ -41,6 +42,7 @@ Answer with only 'YES' or 'NO':"""
                 contents=prompt
             ))
             decision = response.text.strip().upper()
+            print(f"Memory Gate Decision: {decision}")
             should_rem = "YES" in decision
             memory_logger.log_event("gate_decision", {
                 "decision": decision,

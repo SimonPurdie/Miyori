@@ -4,6 +4,8 @@ import time
 
 # Add project root to path so we can import src
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from src.utils.config import Config
+Config.load()
 
 from src.interfaces.llm_backend import ILLMBackend
 from src.implementations.llm.google_ai_backend import GoogleAIBackend

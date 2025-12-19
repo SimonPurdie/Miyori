@@ -5,6 +5,8 @@ import time
 
 # Add project root to path so we can import src
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+from src.utils.config import Config
+Config.load()
 
 from src.interfaces.speech_output import ISpeechOutput
 from src.implementations.tts.kokoro_tts_output import KokoroTTSOutput

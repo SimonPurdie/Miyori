@@ -13,6 +13,8 @@ from src.core.tool_registry import ToolRegistry
 from src.tools.web_search import web_search_tool
 from src.tools.file_ops import file_ops_tool
 from src.utils import logger
+from src.utils.config import Config
+Config.load()
 
 def run_test_case(backend, registry, prompt):
     print(f"\n[USER]: {prompt}")

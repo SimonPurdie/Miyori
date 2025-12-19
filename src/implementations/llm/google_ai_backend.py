@@ -3,25 +3,22 @@ from google.genai import types
 import json
 from pathlib import Path
 from typing import Callable, List, Dict, Any
-from src.core.tools import Tool
-from src.interfaces.llm_backend import ILLMBackend
 import asyncio
 import threading
 
+from src.utils.config import Config
+from src.core.tools import Tool
+from src.interfaces.llm_backend import ILLMBackend
+
 class GoogleAIBackend(ILLMBackend):
     def __init__(self):
-        # e:/_Projects/Miyori/src/implementations/llm/google_ai_backend.py
-        project_root = Path(__file__).parent.parent.parent.parent
-        config_path = project_root / "config.json"
-        
-        with open(config_path, 'r') as f:
-            config = json.load(f)
-            
-        llm_config = config.get("llm", {})
+        llm_config = Config.data.get("llm", {})
         self.api_key = llm_config.get("api_key")
         self.model_name = llm_config.get("model")
 
         # Load System Instructions
+        # e:/_Projects/Miyori/src/implementations/llm/google_ai_backend.py
+        project_root = Path(__file__).parent.parent.parent.parent
         system_instruction_file = llm_config.get("system_instruction_file", "system_instructions.txt")
         self.system_instruction_path = project_root / system_instruction_file
         self.system_instruction = None
@@ -71,7 +68,7 @@ class GoogleAIBackend(ILLMBackend):
                 self.semantic_extractor, self.relational_manager
             )
             
-            memory_config = config.get("memory", {})
+            memory_config = Config.data.get("memory", {})
             self.memory_enabled = memory_config.get("enabled", True)
             self.feature_flags = memory_config.get("feature_flags", {})
             

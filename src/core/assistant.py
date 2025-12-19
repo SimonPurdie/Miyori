@@ -6,6 +6,7 @@ from src.interfaces.speech_output import ISpeechOutput
 from src.interfaces.llm_backend import ILLMBackend
 from src.core.tool_registry import ToolRegistry
 from typing import Dict, Any, Callable
+from src.utils.config import Config
 
 class VoiceAssistant:
     def __init__(self, 
@@ -19,16 +20,7 @@ class VoiceAssistant:
         self.tool_registry = tool_registry # NEW
         
         # Load config for active listen timeout
-        self.active_listen_timeout = 30
-        try:
-            config_path = Path(__file__).parent.parent.parent / "config.json"
-            if config_path.exists():
-                with open(config_path, 'r') as f:
-                    config = json.load(f)
-                    self.active_listen_timeout = config.get("speech_input", {}).get("active_listen_timeout", 30)
-            print(f"Active listening timeout set to {self.active_listen_timeout} seconds")
-        except Exception as e:
-            print(f"Error loading config, using default timeout: {e}")
+        self.active_listen_timeout = Config.data.get("speech_input", {}).get("active_listen_timeout", 30)
 
     def run(self) -> None:
         print("Miyori starting up...")
