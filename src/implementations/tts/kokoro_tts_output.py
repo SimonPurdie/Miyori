@@ -45,6 +45,7 @@ def _kokoro_worker(text_queue, audio_queue, pipeline, voice, speed):
             text_queue.task_done()
 
 class KokoroTTSOutput(ISpeechOutput):
+    _TTS_STRIP_CHARS = ['*']
     def __init__(self):
         # Initialize pipeline (this might download weights)
         print("Initializing Kokoro pipeline... (this may download model weights)")
@@ -137,11 +138,19 @@ class KokoroTTSOutput(ISpeechOutput):
                 self._flush_timer = threading.Timer(0.5, self._flush_internal)
                 self._flush_timer.start()
 
+    def _enqueue_speech(self, text: str) -> None:
+        """Sanitize and enqueue text to the Kokoro pipeline."""
+        if not text.strip():
+            return
+        
+        pattern = f"[{re.escape(''.join(self._TTS_STRIP_CHARS))}]"
+        sanitized_text = re.sub(pattern, '', text)
+        self._speech_pipeline.enqueue(sanitized_text)
+
     def _flush_internal(self) -> None:
         """Force output of any buffered text."""
         with self._buffer_lock:
-            if self._buffer.strip():
-                self._speech_pipeline.enqueue(self._buffer)
+            self._enqueue_speech(self._buffer)
             self._buffer = ""
         
     def _process_buffer(self) -> None:
@@ -152,8 +161,7 @@ class KokoroTTSOutput(ISpeechOutput):
         
         if len(parts) > 1:
             for part in parts[:-1]:
-                if part.strip():
-                    self._speech_pipeline.enqueue(part)
+                self._enqueue_speech(part)
             
             self._buffer = parts[-1]
 
