@@ -7,7 +7,7 @@ from src.utils.config import Config
 Config.load()
 
 from src.interfaces.speech_input import ISpeechInput
-from src.implementations.speech.porcupine_speech_input import PorcupineSpeechInput
+from src.implementations.speech.horrible_speech_input import HorribleSpeechInput
 
 def run_speech_test(speech_input: ISpeechInput):
     """
@@ -28,7 +28,7 @@ def run_speech_test(speech_input: ISpeechInput):
 
 def main():
     try:
-        speech_input = PorcupineSpeechInput()
+        speech_input = HorribleSpeechInput()
     except Exception as e:
         print(f"Failed to initialize speech input: {e}")
         return

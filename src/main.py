@@ -1,4 +1,4 @@
-from src.implementations.speech.porcupine_speech_input import PorcupineSpeechInput
+from src.implementations.speech.horrible_speech_input import HorribleSpeechInput
 from src.implementations.tts.kokoro_tts_output import KokoroTTSOutput
 from src.implementations.llm.google_ai_backend import GoogleAIBackend
 from src.core.assistant import VoiceAssistant
@@ -14,7 +14,7 @@ def main():
     Config.load()
     setup_logging()
             
-    speech_input = PorcupineSpeechInput()
+    speech_input = HorribleSpeechInput()
     speech_output = KokoroTTSOutput()
     llm_backend = GoogleAIBackend()
     
