@@ -56,19 +56,19 @@ def run_consolidation(db_path: Optional[str] = None, verbose: bool = True) -> bo
         # Load configuration
         Config.load()
         if verbose:
-            print("✓ Configuration loaded")
+            print("OK: Configuration loaded")
 
         # Setup Gemini client
         llm_config = Config.data.get("llm", {})
         api_key = llm_config.get("api_key")
         if not api_key:
             if verbose:
-                print("❌ API key not found in config")
+                print("ERROR: API key not found in config")
             return False
 
         client = genai.Client(api_key=api_key)
         if verbose:
-            print("✓ Gemini client initialized")
+            print("OK: Gemini client initialized")
 
         # Setup memory store
         if db_path is None:
@@ -78,27 +78,27 @@ def run_consolidation(db_path: Optional[str] = None, verbose: bool = True) -> bo
 
         store = SQLiteMemoryStore(str(db_path))
         if verbose:
-            print(f"✓ Memory store initialized (DB: {db_path})")
+            print(f"OK: Memory store initialized (DB: {db_path})")
 
         # Setup embedding service
         embedding_service = EmbeddingService()
         if verbose:
-            print("✓ Embedding service initialized")
+            print("OK: Embedding service initialized")
 
         # Setup episodic manager
         episodic_manager = EpisodicMemoryManager(store, embedding_service)
         if verbose:
-            print("✓ Episodic memory manager initialized")
+            print("OK: Episodic memory manager initialized")
 
         # Setup semantic extractor
         semantic_extractor = SemanticExtractor(client, store)
         if verbose:
-            print("✓ Semantic extractor initialized")
+            print("OK: Semantic extractor initialized")
 
         # Setup relational manager
         relational_manager = RelationalManager(client, store)
         if verbose:
-            print("✓ Relational manager initialized")
+            print("OK: Relational manager initialized")
 
         # Setup consolidation manager
         consolidation_manager = ConsolidationManager(
@@ -108,7 +108,7 @@ def run_consolidation(db_path: Optional[str] = None, verbose: bool = True) -> bo
             relational_manager=relational_manager
         )
         if verbose:
-            print("✓ Consolidation manager initialized")
+            print("OK: Consolidation manager initialized")
 
         # Check current memory state
         if verbose:
@@ -203,7 +203,7 @@ def run_consolidation(db_path: Optional[str] = None, verbose: bool = True) -> bo
 
     except Exception as e:
         if verbose:
-            print(f"❌ Consolidation failed: {e}")
+            print(f"ERROR: Consolidation failed: {e}")
         return False
 
 
@@ -222,7 +222,7 @@ def main():
 
     if not verbose:
         # If quiet mode, still show success/failure
-        print("✓" if success else "❌")
+        print("SUCCESS" if success else "FAILED")
 
     sys.exit(0 if success else 1)
 

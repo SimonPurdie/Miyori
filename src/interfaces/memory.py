@@ -25,6 +25,16 @@ class IMemoryStore(ABC):
         pass
 
     @abstractmethod
+    def get_unconsolidated_episodes(self, status: str = 'active', limit: Optional[int] = None) -> List[Dict[str, Any]]:
+        """Get episodes that haven't been consolidated yet."""
+        pass
+
+    @abstractmethod
+    def mark_episodes_consolidated(self, episode_ids: List[str]) -> bool:
+        """Mark episodes as consolidated by setting consolidated_at timestamp."""
+        pass
+
+    @abstractmethod
     def add_semantic_fact(self, fact_data: Dict[str, Any]) -> str:
         """Store or update a semantic fact."""
         pass

@@ -10,6 +10,7 @@ requires-python = ">=3.11, <3.13"
 dependencies = [
     "ddgs>=9.10.0",
     "google-genai>=1.56.0",
+    "hdbscan>=0.8.41",
     "kokoro>=0.9.4",
     "numpy>=2.4.0",
     "pip>=25.3",

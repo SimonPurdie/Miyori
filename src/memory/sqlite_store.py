@@ -32,7 +32,8 @@ class SQLiteMemoryStore(IMemoryStore):
                     topics TEXT,    -- JSON string
                     entities TEXT,  -- JSON string
                     connections TEXT, -- JSON string
-                    status TEXT
+                    status TEXT,
+                    consolidated_at DATETIME
                 )
             """)
 
@@ -80,8 +81,7 @@ class SQLiteMemoryStore(IMemoryStore):
                     version INTEGER PRIMARY KEY
                 )
             """)
-            
-            # Set initial version if not present
+
             cursor.execute("SELECT COUNT(*) FROM schema_version")
             if cursor.fetchone()[0] == 0:
                 cursor.execute("INSERT INTO schema_version (version) VALUES (1)")
@@ -96,10 +96,10 @@ class SQLiteMemoryStore(IMemoryStore):
             cursor = conn.cursor()
             cursor.execute("""
                 INSERT INTO episodic_memory (
-                    id, summary, full_text, timestamp, embedding, 
-                    importance, emotional_valence, topics, entities, 
-                    connections, status
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    id, summary, full_text, timestamp, embedding,
+                    importance, emotional_valence, topics, entities,
+                    connections, status, consolidated_at
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 episode_id,
                 episode_data.get('summary'),
@@ -111,7 +111,8 @@ class SQLiteMemoryStore(IMemoryStore):
                 json.dumps(episode_data.get('topics', [])),
                 json.dumps(episode_data.get('entities', [])),
                 json.dumps(episode_data.get('connections', [])),
-                episode_data.get('status', 'pending_embedding')
+                episode_data.get('status', 'pending_embedding'),
+                episode_data.get('consolidated_at')  # NULL for new episodes
             ))
             conn.commit()
         
@@ -219,6 +220,63 @@ class SQLiteMemoryStore(IMemoryStore):
             "top_similarity": final_results[0]['similarity'] if final_results else 0
         })
         return final_results
+
+    def get_unconsolidated_episodes(self, status: str = 'active', limit: Optional[int] = None) -> List[Dict[str, Any]]:
+        """Get episodes that haven't been consolidated yet (consolidated_at IS NULL)."""
+        with self._get_connection() as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+
+            query = "SELECT * FROM episodic_memory WHERE status = ? AND consolidated_at IS NULL"
+            params = [status]
+
+            if limit is not None:
+                query += " LIMIT ?"
+                params.append(limit)
+
+            cursor.execute(query, params)
+            rows = cursor.fetchall()
+
+        results = []
+        for row in rows:
+            data = dict(row)
+            data['full_text'] = json.loads(data['full_text'])
+            data['topics'] = json.loads(data['topics'])
+            data['entities'] = json.loads(data['entities'])
+            data['connections'] = json.loads(data['connections'])
+            results.append(data)
+
+        from src.utils.memory_logger import memory_logger
+        memory_logger.log_event("db_get_unconsolidated_episodes", {
+            "status": status,
+            "limit": limit,
+            "returned_count": len(results)
+        })
+        return results
+
+    def mark_episodes_consolidated(self, episode_ids: List[str]) -> bool:
+        """Mark episodes as consolidated by setting consolidated_at timestamp."""
+        if not episode_ids:
+            return True
+
+        now = datetime.now().isoformat()
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            # Use a single UPDATE with IN clause for efficiency
+            placeholders = ','.join('?' * len(episode_ids))
+            cursor.execute(f"""
+                UPDATE episodic_memory
+                SET consolidated_at = ?
+                WHERE id IN ({placeholders})
+            """, [now] + episode_ids)
+            conn.commit()
+
+            from src.utils.memory_logger import memory_logger
+            memory_logger.log_event("db_mark_episodes_consolidated", {
+                "episode_count": len(episode_ids),
+                "success": cursor.rowcount > 0
+            })
+            return cursor.rowcount > 0
 
     def add_semantic_fact(self, fact_data: Dict[str, Any]) -> str:
         fact_id = fact_data.get('id') or str(uuid.uuid4())
