@@ -1,7 +1,8 @@
 google-genai
 pyaudio
 pvporcupine
-pvcheetah==2.3.0
+pvcobra==2.1.0
+vosk
 kokoro
 sounddevice
 numpy
