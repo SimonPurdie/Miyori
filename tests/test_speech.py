@@ -1,3 +1,4 @@
+from pydoc import text
 import sys
 import os
 
@@ -17,13 +18,22 @@ def run_speech_test(speech_input: ISpeechInput):
     print("\n--- Speech Test ---")
     print("Please say the wake word 'Hey Miyori' to trigger...")
     
-    result = speech_input.listen()
+    wake_word_required = True
+
+    while True:
+        result = speech_input.listen(wake_word_required)
+        wake_word_required = False  # After first wake word, no longer required
     
-    print("-" * 20)
-    if result:
-        print(f"Recognized: {result}")
-    else:
-        print("No speech detected or error occurred.")
+        print("-" * 20)
+        if result:
+            print(f"Recognized: {result}")
+            if set(['exit', 'goodbye']).intersection(result.lower().split()):
+                print("Goodbye!")
+                break
+        else:
+            print("No speech detected or error occurred.")
+            break
+    
     print("Speech Test Completed.")
 
 def main():

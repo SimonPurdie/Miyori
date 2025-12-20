@@ -61,11 +61,15 @@ class PorcupineCobraVosk(ISpeechInput):
                         break
 
             print("[Status] Listening for command...")
-            recording_buffer = list(self.pre_roll_buffer)
-            
+            recording_buffer = []
+
+            # Hysteresis & Grace Period settings
+            activation_threshold = 0.7  # Need a solid sound to start
+            deactivation_threshold = 0.3 # Stay "active" even if quiet            
+
             is_speaking = False
             silence_frames = 0
-            max_silence = 25
+            max_silence_frames = int(0.8 * (self.sample_rate / self.frame_length))
             max_recording_time = self.active_listen_timeout * (self.sample_rate / self.frame_length)
 
             for _ in range(int(max_recording_time)):
@@ -74,17 +78,26 @@ class PorcupineCobraVosk(ISpeechInput):
                 
                 voice_probability = self.cobra.process(pcm)
                 
-                if voice_probability > 0.6:
-                    if not is_speaking: is_speaking = True
-                    silence_frames = 0
-                elif is_speaking:
-                    silence_frames += 1
+                # HYSTERESIS LOGIC
+                if not is_speaking:
+                    if voice_probability > activation_threshold:
+                        is_speaking = True
+                        silence_frames = 0
+                        print("[Status] Speech started...")
+                else:
+                    # Once speaking, we only count silence if below the lower threshold
+                    if voice_probability > deactivation_threshold:
+                        silence_frames = 0
+                    else:
+                        silence_frames += 1
                 
-                if is_speaking and silence_frames > max_silence:
-                    print("[Status] End of speech detected.")
+                # GRACE PERIOD LOGIC
+                if is_speaking and silence_frames > max_silence_frames:
+                    print("[Status] Definitive end of speech detected.")
                     break
+            else:
+                print("[Status] Recording timed out.")
 
-            
             if not is_speaking:
                 return None
 
