@@ -3,7 +3,7 @@
 ## Current State Assessment
 
 - **EXTRACTION:** ✅ Working satisfactorily via HDBSCAN clustering
-- **EMBEDDING:** ❌ Not implemented
+- **EMBEDDING:** ✅ Implemented
 - **RECALL:** ❌ Not implemented
 - **MANAGING:** ❌ No confidence update system
 - **MERGING:** ❌ Many duplicate/related facts accumulating
@@ -17,25 +17,6 @@
 ---
 
 ## System Architecture
-
-### 1. EMBEDDING: Async Queue Pattern
-
-**Flow:**
-```
-New Fact → DB (status='pending_embed') 
-         → Background Queue 
-         → Gemini text-embedding-004 
-         → DB (status='active')
-```
-
-**Key Points:**
-- Mirrors proven episodic embedding pattern exactly
-- Non-blocking—facts queryable immediately via text fallback
-- Background worker processes queue continuously
-
-**API Cost:** ~0.0001¢ per fact (negligible)
-
----
 
 ### 2. RECALL: Hybrid Retrieval with Diversity
 
