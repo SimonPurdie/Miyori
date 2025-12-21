@@ -2,9 +2,11 @@ import sys
 import os
 from pathlib import Path
 from datetime import datetime
-
+import numpy as np
+from sklearn.metrics.pairwise import cosine_similarity
 sys.path.append(str(Path(__file__).parent.parent))
-
+from src.utils.config import Config
+Config.load()
 from src.memory.sqlite_store import SQLiteMemoryStore
 from src.memory.episodic import EpisodicMemoryManager
 from src.utils.embeddings import EmbeddingService

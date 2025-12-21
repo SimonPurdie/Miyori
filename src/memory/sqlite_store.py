@@ -146,10 +146,10 @@ class SQLiteMemoryStore(IMemoryStore):
 
     def search_episodes(self, query_embedding: List[float], limit: int = 5, status: str = 'active') -> List[Dict[str, Any]]:
         """
-        Note: Basic SQLite doesn't support vector search natively.
-        In Phase 1, we fetch active episodes and compute cosine similarity in Python.
-        Scalability improvements will come in later phases.
+        Vector search using cosine similarity.
+        Note: Still does full table scan - see scalability notes below.
         """
+        from sklearn.metrics.pairwise import cosine_similarity
         import numpy as np
         
         with self._get_connection() as conn:
@@ -157,36 +157,45 @@ class SQLiteMemoryStore(IMemoryStore):
             cursor = conn.cursor()
             cursor.execute("SELECT * FROM episodic_memory WHERE status = ?", (status,))
             rows = cursor.fetchall()
-            
-        results = []
-        query_vec = np.array(query_embedding)
+        
+        if not rows:
+            return []
+        
+        # Build matrix of all embeddings at once
+        embeddings_matrix = []
+        valid_rows = []
         
         for row in rows:
-            if row['embedding'] is None:
-                continue
-                
-            # Assuming embedding is stored as pickled or bytes of numpy array
-            # For simplicity in Phase 1, we'll assume it's a blob of floats
-            mem_vec = np.frombuffer(row['embedding'], dtype=np.float32)
-            
-            # Simple cosine similarity
-            if np.linalg.norm(mem_vec) == 0 or np.linalg.norm(query_vec) == 0:
-                similarity = 0.0
-            else:
-                similarity = np.dot(query_vec, mem_vec) / (np.linalg.norm(query_vec) * np.linalg.norm(mem_vec))
-            
+            if row['embedding'] is not None:
+                mem_vec = np.frombuffer(row['embedding'], dtype=np.float32)
+                embeddings_matrix.append(mem_vec)
+                valid_rows.append(row)
+        
+        if not embeddings_matrix:
+            return []
+        
+        # Convert to numpy array and compute all similarities at once
+        embeddings_matrix = np.array(embeddings_matrix)
+        query_vec = np.array(query_embedding, dtype=np.float32).reshape(1, -1)
+        
+        # Compute cosine similarity for all vectors at once
+        similarities = cosine_similarity(query_vec, embeddings_matrix)[0]
+        
+        # Build results with similarity scores
+        results = []
+        for idx, row in enumerate(valid_rows):
             data = dict(row)
-            data['similarity'] = float(similarity)
+            data['similarity'] = float(similarities[idx])
             data['full_text'] = json.loads(data['full_text'])
             data['topics'] = json.loads(data['topics'])
             data['entities'] = json.loads(data['entities'])
             data['connections'] = json.loads(data['connections'])
             results.append(data)
-            
-        # Sort by similarity and return top N
+        
+        # Sort and return top N
         results.sort(key=lambda x: x['similarity'], reverse=True)
         final_results = results[:limit]
-
+        
         from src.utils.memory_logger import memory_logger
         memory_logger.log_event("db_search_episodes", {
             "status": status,
@@ -194,6 +203,7 @@ class SQLiteMemoryStore(IMemoryStore):
             "returned_count": len(final_results),
             "top_similarity": final_results[0]['similarity'] if final_results else 0
         })
+        
         return final_results
 
     def get_unconsolidated_episodes(self, status: str = 'active', limit: Optional[int] = None) -> List[Dict[str, Any]]:
