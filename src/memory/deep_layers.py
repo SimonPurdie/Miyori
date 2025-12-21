@@ -10,22 +10,26 @@ class SemanticExtractor:
         self.store = store
         self.model_name = Config.data.get("memory", {}).get("semantic_model")
 
-    async def extract_facts_batched(self, episodes: List[Dict[str, Any]]):
-        """Extract semantic facts from a batch of episodic summaries."""
-        if not episodes or not self.client:
+    async def extract_facts_from_batch(self, clusters: List[List[Dict[str, Any]]]):
+        """Extract semantic facts from multiple clusters in a single API call."""
+        if not clusters or not self.client:
             return
-
-        summaries_text = "\n".join([f"- {e['summary']}" for e in episodes])
         
-        prompt = f"""Extract stable semantic facts about the user from these conversation summaries.
-Only extract objective facts, preferences, and recurring patterns.
-Format each fact as a simple sentence.
-
-Summaries:
-{summaries_text}
-
-Facts:"""
-
+        # Build prompt with cluster structure
+        prompt = "Extract stable semantic facts about the user from these semantically-grouped conversations.\n\n"
+        prompt += "Each cluster contains related conversations. Look for:\n"
+        prompt += "- Facts that appear multiple times within a cluster\n"
+        prompt += "- Facts that appear across different clusters\n"
+        prompt += "- Recurring preferences, patterns, and decisions\n\n"
+        
+        for cluster_idx, cluster in enumerate(clusters):
+            prompt += f"<CLUSTER_{cluster_idx}>\n"
+            for episode in cluster:
+                prompt += f"- {episode['summary']}\n"
+            prompt += f"</CLUSTER_{cluster_idx}>\n\n"
+        
+        prompt += "Extract only objective facts as simple sentences. Format: one fact per line.\n\nFacts:"
+        
         try:
             import asyncio
             loop = asyncio.get_running_loop()
@@ -34,15 +38,23 @@ Facts:"""
                 contents=prompt
             ))
             
+            # Parse facts from response
             facts = [line.strip("- ").strip() for line in response.text.split("\n") if line.strip()]
+            
+            # Store facts with source episode tracking
+            all_episode_ids = [ep['id'] for cluster in clusters for ep in cluster]
             
             for fact in facts:
                 if len(fact) > 5:
                     self.store.add_semantic_fact({
                         "fact": fact,
                         "confidence": 0.7,
-                        "status": "stable"
+                        "status": "stable",
+                        "derived_from": all_episode_ids  # Track which episodes contributed
                     })
+                    
+            print(f"Extracted {len(facts)} facts from {len(clusters)} clusters ({len(all_episode_ids)} episodes)")
+            
         except Exception as e:
             import sys
             sys.stderr.write(f"Semantic Extraction failed: {e}\n")

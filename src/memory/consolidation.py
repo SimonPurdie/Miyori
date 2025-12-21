@@ -1,7 +1,8 @@
 from google import genai
 import json
 import numpy as np
-import hdbscan
+from sklearn.cluster import HDBSCAN
+#from sklearn.preprocessing import normalize
 from typing import List, Dict, Any, Tuple
 from src.interfaces.memory import IMemoryStore
 from src.memory.deep_layers import SemanticExtractor, EmotionalTracker
@@ -54,9 +55,10 @@ class EpisodeClustering:
         embeddings_array = np.array(embeddings)
 
         # Perform HDBSCAN clustering
-        clusterer = hdbscan.HDBSCAN(
+        clusterer = HDBSCAN(
             min_cluster_size=self.min_cluster_size,
-            metric="euclidean"
+            metric='cosine',
+            copy=False
         )
         cluster_labels = clusterer.fit_predict(embeddings_array)
 
@@ -72,79 +74,58 @@ class EpisodeClustering:
 
         return list(clusters.values())
 
-    def split_large_clusters(self, clusters: List[List[Dict[str, Any]]],
-                           max_size: int = None) -> List[List[Dict[str, Any]]]:
+    def create_consolidation_batches(self, episodes: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """
-        Split clusters that are too large by re-clustering them with higher min_cluster_size.
-
-        Args:
-            clusters: List of clusters to potentially split
-            max_size: Maximum allowed cluster size
-
+        Create batches that pack multiple clusters together while preserving cluster identity.
+        
         Returns:
-            List of clusters, with large ones split into smaller ones
-        """
-
-        result_clusters = []
-
-        for cluster in clusters:
-            if len(cluster) <= self.max_cluster_size:
-                result_clusters.append(cluster)
-            else:
-                # Split large cluster by increasing min_cluster_size
-                # Start with min_cluster_size = max_size // 2 + 1
-                min_size = max(self.max_cluster_size // 2 + 1, 2)
-
-                # Try progressively larger min_cluster_size until clusters are small enough
-                while min_size <= self.max_cluster_size:
-                    subclusters = self.cluster_episodes(cluster)
-
-                    # Check if all subclusters are now small enough
-                    if all(len(subcluster) <= self.max_cluster_size for subcluster in subclusters):
-                        result_clusters.extend(subclusters)
-                        break
-
-                    min_size += 1
-                else:
-                    # If we couldn't split effectively, just chunk the cluster
-                    # This is a fallback for when clustering doesn't work well
-                    for i in range(0, len(cluster), self.max_cluster_size):
-                        result_clusters.append(cluster[i:i + self.max_cluster_size])
-
-        return result_clusters
-
-    def create_consolidation_batches(self, episodes: List[Dict[str, Any]],
-                                   max_cluster_batch_size: int = None) -> List[List[Dict[str, Any]]]:
-        """
-        Create consolidation batches by clustering episodes and ensuring no batch exceeds max_cluster_batch_size.
-
-        Args:
-            episodes: Episodes to batch
-            max_cluster_batch_size: Maximum episodes per batch
-
-        Returns:
-            List of batches (each batch is a list of episodes)
+            List of batch dicts: [{'clusters': [cluster1, cluster2, ...], 'total_episodes': N}, ...]
         """
         if not episodes:
             return []
-
+        
         # First, cluster the episodes
         clusters = self.cluster_episodes(episodes)
-
-        # Then split any clusters that are too large
-        batches = self.split_large_clusters(clusters, self.max_cluster_size)
-
-        # Final safety check: ensure no batch exceeds max_cluster_size
-        final_batches = []
-        for batch in batches:
-            if len(batch) <= self.max_cluster_size:
-                final_batches.append(batch)
+        
+        # Split oversized clusters
+        processed_clusters = []
+        for cluster in clusters:
+            if len(cluster) <= self.max_cluster_size:
+                processed_clusters.append(cluster)
             else:
-                # Emergency chunking
-                for i in range(0, len(batch), self.max_cluster_size):
-                    final_batches.append(batch[i:i + self.max_cluster_size])
-
-        return final_batches
+                # Chunk large cluster but mark chunks as related
+                for i in range(0, len(cluster), self.max_cluster_size):
+                    processed_clusters.append(cluster[i:i + self.max_cluster_size])
+        
+        # Pack clusters into batches up to max_cluster_size total episodes
+        batches = []
+        current_batch = []
+        current_episode_count = 0
+        
+        for cluster in processed_clusters:
+            cluster_size = len(cluster)
+            
+            # If adding this cluster exceeds limit, start new batch
+            if current_episode_count + cluster_size > self.max_cluster_size and current_batch:
+                batches.append({
+                    'clusters': current_batch,
+                    'total_episodes': current_episode_count
+                })
+                current_batch = []
+                current_episode_count = 0
+            
+            # Add cluster to current batch
+            current_batch.append(cluster)
+            current_episode_count += cluster_size
+        
+        # Add final batch
+        if current_batch:
+            batches.append({
+                'clusters': current_batch,
+                'total_episodes': current_episode_count
+            })
+    
+        return batches
 
 class RelationalManager:
     def __init__(self, client: genai.Client, store: IMemoryStore):
@@ -219,29 +200,20 @@ class ConsolidationManager:
 
         print(f"Found {len(episodes)} unconsolidated episodes.")
 
-        # 2. Create consolidation batches using clustering
-        batches = self.clustering.create_consolidation_batches(episodes)
-        print(f"Created {len(batches)} consolidation batches.")
-
-        # 3. Process each batch
         processed_episode_ids = []
+        batches = self.clustering.create_consolidation_batches(episodes)
+        print(f"Created {len(batches)} batches from {len(episodes)} episodes.")
 
         for i, batch in enumerate(batches):
-            print(f"Processing batch {i+1}/{len(batches)} with {len(batch)} episodes...")
+            print(f"Processing batch {i+1}/{len(batches)} with {batch['total_episodes']} episodes across {len(batch['clusters'])} clusters...")
+        
+            # Extract facts with cluster structure preserved
+            await self.semantic_extractor.extract_facts_from_batch(batch['clusters'])
+            
+            # Mark episodes as consolidated
+            all_episode_ids = [ep['id'] for cluster in batch['clusters'] for ep in cluster]
+            processed_episode_ids.extend(all_episode_ids)
 
-            try:
-                # Extract semantic facts from this batch
-                await self.semantic_extractor.extract_facts_batched(batch)
-
-                # Collect episode IDs for marking as consolidated
-                batch_ids = [episode['id'] for episode in batch]
-                processed_episode_ids.extend(batch_ids)
-
-            except Exception as e:
-                print(f"Error processing batch {i+1}: {e}")
-                # Continue with other batches even if one fails
-
-        # 4. Mark processed episodes as consolidated
         if processed_episode_ids:
             success = self.store.mark_episodes_consolidated(processed_episode_ids)
             if success:
