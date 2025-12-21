@@ -12,23 +12,7 @@ def format_section(label: str, content: Any) -> str:
     
     header = f"--- {label} ---"
     
-    if label == 'RELATIONAL':
-        # Relational content is a list of dicts with 'category' and 'data'
-        items = []
-        for item in content:
-            cat = item.get('category', '').replace('_', ' ').upper()
-            val = item.get('data', {})
-            items.append(f"{cat}: {val}")
-        body = "\n".join(items)
-    
-    elif label == 'EMOTIONAL':
-        # Emotional content is a dict
-        state = content.get('current_state', 'None')
-        body = f"Current State: {state}"
-        if content.get('should_acknowledge'):
-            body += " (Acknowledge this state in response)"
-
-    elif label == 'FACTS':
+    if label == 'FACTS':
         # Semantic facts
         items = [f"- {item.get('fact')}" for item in content]
         body = "\n".join(items)
@@ -75,29 +59,21 @@ class ContextBuilder:
         self.token_budget = token_budget
 
     def build_context(self, user_message: str) -> str:
-        """Assemble context with strict priority ordering."""
-        
-        # 1. Retrieve all potential context pieces
-        relational = self.store.get_relational_memories()        # Personality/Style
-        emotional = self.store.get_emotional_thread()            # Continuity
-        
+        """Assemble context with strict priority ordering."""       
         # Recent high importance (last 7 days)
         # For Phase 1, we'll just get all and filter in Python
         all_episodes = self.store.search_episodes([0.0]*768, limit=100, status='active')
         seven_days_ago = (datetime.now() - timedelta(days=7)).isoformat()
-        recent_important = [e for e in all_episodes if e['timestamp'] >= seven_days_ago and e['importance'] >= 0.7]
-        
+        recent_important = [e for e in all_episodes if e['timestamp'] >= seven_days_ago and e['importance'] >= 0.7]        
         semantic_facts = self.store.get_semantic_facts(limit=10) # Facts
         relevant_episodes = self.episodic_manager.retrieve_relevant(user_message, limit=5) # Semantic Search
         
         # 2. Priority Allocation
         # (Label, Content, Target Tokens, Required)
         sections = [
-            ('RELATIONAL', relational, 150, True),
-            ('EMOTIONAL', emotional, 100, True),
-            ('RECENT', recent_important, 300, False),
-            ('FACTS', semantic_facts, 200, False),
-            ('RELEVANT', relevant_episodes, 250, False)
+            ('RECENT', recent_important, 400, False),
+            ('FACTS', semantic_facts, 300, False),
+            ('RELEVANT', relevant_episodes, 300, False)
         ]
         
         context_parts = []

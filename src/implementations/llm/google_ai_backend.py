@@ -57,15 +57,12 @@ class GoogleAIBackend(ILLMBackend):
             self.gate = MemoryGate(self.client)
             
             # Phase 3 Components
-            from src.memory.deep_layers import EmotionalTracker
-            from src.memory.consolidation import RelationalManager, ConsolidationManager, SemanticExtractor
+            from src.memory.consolidation import ConsolidationManager, SemanticExtractor
             
-            self.emotional_tracker = EmotionalTracker(self.store)
-            self.relational_manager = RelationalManager(self.client, self.store)
             self.semantic_extractor = SemanticExtractor(self.client, self.store)
             self.consolidation = ConsolidationManager(
                 self.store, self.episodic_manager, 
-                self.semantic_extractor, self.relational_manager
+                self.semantic_extractor
             )
             
             memory_config = Config.data.get("memory", {})
@@ -105,9 +102,6 @@ class GoogleAIBackend(ILLMBackend):
             print(f"Memory: Storing episode...")
             await self.episodic_manager.add_episode(summary, full_text)
             print(f"Memory: Episode stored successfully.")
-            
-            # Phase 3: Emotional Continuity
-            self.emotional_tracker.update_thread(user_msg, miyori_msg)
             
         except Exception as e:
             import sys

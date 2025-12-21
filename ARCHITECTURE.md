@@ -41,7 +41,7 @@ graph TD
 ### Core Components
 
 * **Miyori Core (`src/core/miyori.py`)**: The main loop that orchestrates the system, listening for input and streaming results to the LLM and TTS engines.
-* **Memory System (`src/memory/`)**: A four-tier cognitive architecture (Episodic, Semantic, Relational, Emotional) that allows for long-term behavioral consistency.
+* **Memory System (`src/memory/`)**: A tiered memory architecture that summarises memories and extracts semantic facts from them.
 * **Interfaces (`src/interfaces/`)**: Abstract Base Classes (ABCs) that define the contractual requirements for speech input, output, and LLM backends.
 * **Implementations (`src/implementations/`)**: Concrete classes, isolated in sub-packages, that fulfill the defined interfaces.
 * **Logging (`src/utils/logger.py`)**: A utility redirecting `stdout`/`stderr` to capture all console output into terminal and rotating log files.
@@ -53,16 +53,14 @@ graph TD
 
 Miyori uses a human-like memory system designed for behavioral consistency rather than eidetic recall. It utilizes an abstracted memory store for structured data and vector embeddings for semantic retrieval.
 
-### Four-Tier Storage
-* **Episodic**: Summarized past conversations with emotional valence and importance scores.
-* **Semantic**: Distilled facts (e.g., "User works as an engineer") with confidence levels and version history.
-* **Relational**: High-level interaction norms, communication styles, and relationship phases.
-* **Emotional Thread**: Tracks current mood and continuity across recent interactions.
+### Tiered Storage
+* **Episodic**: Summarized past conversations with importance scores.
+* **Semantic**: Distilled facts (e.g., "The project folder is in G:\Miyori") with confidence levels and version history.
 
 ### Processing Pipeline
-* **Write Gate**: Only stores data meeting specific criteria such as explicit requests, high emotion, or identity-defining facts.
+* **Write Gate**: Only stores memories meeting criteria for importance.
 * **Async Embedding Queue**: Summaries are generated via LLM and queued for background processing to prevent TTS latency. 
-* **Prioritized Retrieval**: Context is built using a strict 1000-token budget with the following priority: Relational > Emotional > Recent Important > Semantic Facts > Relevant Episodic.
+* **Prioritized Retrieval**: Context is built allocating important and relevant memories within a token budget.
 * **Consolidation**: A periodic background task clusters related episodes to extract stable facts and prunes the database to stay within memory budgets.
 
 ---

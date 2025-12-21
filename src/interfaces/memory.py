@@ -43,23 +43,3 @@ class IMemoryStore(ABC):
     def get_semantic_facts(self, status: str = 'stable', limit: int = 10) -> List[Dict[str, Any]]:
         """Retrieve established facts about the user."""
         pass
-
-    @abstractmethod
-    def update_relational_memory(self, category: str, data: Dict[str, Any], confidence: float) -> bool:
-        """Update interaction norms or preferences."""
-        pass
-
-    @abstractmethod
-    def get_relational_memories(self, category: Optional[str] = None) -> List[Dict[str, Any]]:
-        """Retrieve interaction styles or preferences."""
-        pass
-
-    @abstractmethod
-    def update_emotional_thread(self, thread_data: Dict[str, Any]) -> bool:
-        """Update the current emotional continuity state."""
-        pass
-
-    @abstractmethod
-    def get_emotional_thread(self) -> Optional[Dict[str, Any]]:
-        """Retrieve the current emotional continuity state."""
-        pass

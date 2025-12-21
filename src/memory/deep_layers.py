@@ -59,37 +59,3 @@ class SemanticExtractor:
             import sys
             sys.stderr.write(f"Semantic Extraction failed: {e}\n")
 
-class EmotionalTracker:
-    def __init__(self, store: IMemoryStore):
-        self.store = store
-
-    def update_thread(self, user_msg: str, miyori_msg: str):
-        """Update the current emotional thread based on the latest exchange."""
-        # Simple Phase 3 implementation: check for emotion keywords
-        # In a real system, this would be an LLM call or sentiment analysis
-        emotions = {
-            "happy": ["great", "happy", "love", "good"],
-            "sad": ["sad", "unhappy", "bad", "sorry"],
-            "angry": ["angry", "mad", "hate", "stop"],
-            "stressed": ["stress", "busy", "tired", "hard"]
-        }
-        
-        detected = "neutral"
-        for emotion, keywords in emotions.items():
-            if any(kw in user_msg.lower() for kw in keywords):
-                detected = emotion
-                break
-                
-        current = self.store.get_emotional_thread() or {
-            "current_state": "neutral",
-            "thread_length": 0
-        }
-        
-        new_state = detected
-        thread_length = current['thread_length'] + 1 if new_state == current['current_state'] else 1
-        
-        self.store.update_emotional_thread({
-            "current_state": new_state,
-            "thread_length": thread_length,
-            "should_acknowledge": thread_length > 2
-        })

@@ -43,7 +43,7 @@ def run_consolidation(db_path: Optional[str] = None, verbose: bool = True) -> bo
 
         # Import required modules
         from google import genai
-        from src.memory.consolidation import ConsolidationManager, RelationalManager
+        from src.memory.consolidation import ConsolidationManager
         from src.memory.deep_layers import SemanticExtractor
         from src.memory.episodic import EpisodicMemoryManager
         from src.memory.sqlite_store import SQLiteMemoryStore
@@ -95,17 +95,11 @@ def run_consolidation(db_path: Optional[str] = None, verbose: bool = True) -> bo
         if verbose:
             print("OK: Semantic extractor initialized")
 
-        # Setup relational manager
-        relational_manager = RelationalManager(client, store)
-        if verbose:
-            print("OK: Relational manager initialized")
-
         # Setup consolidation manager
         consolidation_manager = ConsolidationManager(
             store=store,
             episodic_manager=episodic_manager,
-            semantic_extractor=semantic_extractor,
-            relational_manager=relational_manager
+            semantic_extractor=semantic_extractor
         )
         if verbose:
             print("OK: Consolidation manager initialized")
@@ -124,14 +118,11 @@ def run_consolidation(db_path: Optional[str] = None, verbose: bool = True) -> bo
                 pending_episodes = cursor.fetchone()[0]
                 cursor.execute("SELECT COUNT(*) FROM semantic_memory")
                 semantic_facts = cursor.fetchone()[0]
-                cursor.execute("SELECT COUNT(*) FROM relational_memory")
-                relational_entries = cursor.fetchone()[0]
 
             if verbose:
                 print(f"Active episodes: {active_episodes}")
                 print(f"Pending episodes: {pending_episodes}")
                 print(f"Semantic facts: {semantic_facts}")
-                print(f"Relational entries: {relational_entries}")
 
         except Exception as e:
             if verbose:
@@ -161,13 +152,10 @@ def run_consolidation(db_path: Optional[str] = None, verbose: bool = True) -> bo
                 active_episodes = cursor.fetchone()[0]
                 cursor.execute("SELECT COUNT(*) FROM semantic_memory")
                 semantic_facts = cursor.fetchone()[0]
-                cursor.execute("SELECT COUNT(*) FROM relational_memory")
-                relational_entries = cursor.fetchone()[0]
 
             if verbose:
                 print(f"Active episodes: {active_episodes}")
                 print(f"Semantic facts: {semantic_facts}")
-                print(f"Relational entries: {relational_entries}")
 
                 # Show some recent semantic facts
                 if semantic_facts > 0:
@@ -176,20 +164,6 @@ def run_consolidation(db_path: Optional[str] = None, verbose: bool = True) -> bo
                     print("\nRecent semantic facts:")
                     for fact, confidence in recent_facts:
                         print(f"  • {fact} (confidence: {confidence})")
-
-                # Show relational memory
-                if relational_entries > 0:
-                    cursor.execute("SELECT category, data, confidence FROM relational_memory ORDER BY last_updated DESC")
-                    relational_data = cursor.fetchall()
-                    print("\nRelational memory:")
-                    for category, data_json, confidence in relational_data:
-                        print(f"  • {category}: confidence {confidence}")
-                        try:
-                            data = json.loads(data_json)
-                            if isinstance(data, dict) and 'analysis' in data:
-                                print(f"    {data['analysis'][:100]}...")
-                        except:
-                            pass
 
         except Exception as e:
             if verbose:

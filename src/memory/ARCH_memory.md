@@ -31,7 +31,6 @@ graph TD
     
     subgraph Context Assembly
         ActiveDB --> VectorSearch[Vector Search]
-        ActiveDB --> SymbolicFilter[Symbolic Filter]
         VectorSearch & SymbolicFilter --> Reranker[Hybrid Reranker]
         Reranker --> PriorityInjector[Priority Context Injector]
     end
@@ -55,8 +54,8 @@ Stores specific conversations and events. This is the entry point for all new in
 | `full_text` | JSON | Raw exchange (User/Miyori). |
 | `summary` | TEXT | LLM-condensed summary (100-150 tokens). |
 | `embedding` | BLOB | 768-dim vector (Gemini `text-embedding-004`). |
-| `importance` | REAL | 0.0-1.0 score (Emotion + Utility). |
-| `emotional_valence` | REAL | -1.0 (Negative) to +1.0 (Positive). |
+| `importance` | REAL | 0.0-1.0 score. |
+| `consolidated_at` | DATETIME | Fact extraction time. |
 | `status` | TEXT | `pending_embedding` \| `active` \| `archived`. |
 
 **Implementation Note:** Rows are initially inserted with `status='pending_embedding'`. The retrieval system filters specifically for `status='active'` to prevent race conditions.
@@ -73,23 +72,15 @@ Stores facts distilled from multiple episodes.
 | `contradictions` | JSON | UUIDs of conflicting memories. |
 | `status` | TEXT | `tentative` \| `stable` \| `deprecated`. |
 
-### 3.3 Relational Memory (`relational_memory`)
-Stores interaction norms and personality baselines.
-
-| Field | Type | Description |
-| :--- | :--- | :--- |
-| `category` | TEXT | e.g., `communication_style`, `preferences`. |
-| `data` | JSON | Norm definitions and weights. |
-| `evidence_count` | INT | Number of interactions supporting this norm. |
-
 ---
 
 ## 4. The Intelligence Lifecycle (Write Path)
 
 ### 4.1 Memory Write Gate
+**[ISSUE:] Documentation missing or ambiguous. An LLM handles write gating in current implementation.**
+
 To prevent noise, the system filters inputs via `should_remember()`. An interaction is stored only if it meets specific criteria:
 * **Explicit Request:** User says "remember this".
-* **High Emotion:** Valence > 0.6.
 * **Relational Damage:** Forgetting would hurt the relationship.
 * **Decision Made:** User committed to an action.
 
@@ -101,6 +92,8 @@ Implemented in `src/memory/episodic.py` to ensure TTS/Response latency is not af
 4.  **Activation:** DB updated to `status='active'` on success.
 
 ### 4.3 Importance Scoring & Decay
+**[ISSUE:] Current scoring is placeholder with arbitrary static weights that are very naively detected**
+
 Importance is calculated at write-time and decays dynamically:
 $$Score = Base + Emotion(0.3) + Personal(0.2) + Decision(0.2)$$
 $$Decay = Score \times e^{\frac{-AgeDays \times \ln(2)}{HalfLife}}$$
@@ -110,7 +103,7 @@ $$Decay = Score \times e^{\frac{-AgeDays \times \ln(2)}{HalfLife}}$$
 
 ## 5. Context Assembly (Read Path)
 
-The system constructs a context window using a prioritized budget of **1000 tokens**.
+The system constructs a context window using a prioritized token budget.
 
 ### 5.1 Hybrid Retrieval & Reranking
 Candidates are fetched via vector search (top 20) and then reranked using symbolic logic:
@@ -119,15 +112,12 @@ Candidates are fetched via vector search (top 20) and then reranked using symbol
 ### 5.2 Priority Injection Hierarchy
 The `build_context()` function injects data in strict order. If the 1000-token limit is hit, lower tiers are dropped completely (never mid-sentence).
 
-1.  **RELATIONAL (Personality/Style)** [REQUIRED]
-    * *Source:* `relational_memory`
-2.  **EMOTIONAL (Current Thread)** [REQUIRED]
-    * *Source:* `emotional_thread`
-3.  **RECENT (Last 7 days, High Importance)** [HIGH]
+**[ISSUE:] We need a different approach to budget handling. Recent messages should have their own budget. We should always be able to afford relevant facts and memories.**
+1.  **RECENT (Last 7 days, High Importance)** [HIGH]
     * *Source:* `episodic_memory` (Recent)
-4.  **FACTS (Semantic Knowledge)** [MEDIUM]
+2.  **FACTS (Semantic Knowledge)** [MEDIUM]
     * *Source:* `semantic_memory`
-5.  **RELEVANT (Retrieval Results)** [FILL]
+3.  **RELEVANT (Retrieval Results)** [FILL]
     * *Source:* `episodic_memory` (Vector match)
 
 ---
@@ -137,23 +127,12 @@ The `build_context()` function injects data in strict order. If the 1000-token l
 ### 6.1 Consolidation
 Running nightly (or per 50 episodes), this process clusters episodic memories. If a fact appears in multiple clusters/episodes, it is extracted and promoted to **Semantic Memory**.
 
-### 6.2 Conflict Resolution & Passive Confirmation
+### 6.2 Conflict Resolution
 The system detects if a new memory conflicts with a semantic fact.
 * If `new_timestamp > last_confirmed`, the old fact's confidence is lowered.
-* If the conflict is high-importance, a "Passive Confirmation" is flagged, prompting the system to ask the user naturally in the next conversation.
 
 ### 6.3 Budget Enforcement
 Hard limits are enforced via `config.json` settings:
 * **Episodic Cap:** 1000 Active items.
 * **Semantic Cap:** 500 Facts.
 * **Pruning Strategy:** When over budget, the system archives the oldest, lowest-importance items first.
-
----
-
-## 7. Testing & Verification
-
-The system is verified via the following suite:
-
-* **`tests/test_embedding_queue.py`:** Confirms episodes transition from `pending` to `active` without blocking the main thread.
-* **`tests/test_context_budget.py`:** Ensures the priority ordering (Relational > ... > Relevant) strictly respects the 1000-token limit.
-* **`tests/test_summarization.py`:** Validates that LLM summaries retain key entities compared to raw text.

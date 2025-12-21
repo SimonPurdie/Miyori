@@ -28,7 +28,6 @@ class SQLiteMemoryStore(IMemoryStore):
                     timestamp DATETIME,
                     embedding BLOB,
                     importance REAL,
-                    emotional_valence REAL,
                     topics TEXT,    -- JSON string
                     entities TEXT,  -- JSON string
                     connections TEXT, -- JSON string
@@ -49,29 +48,6 @@ class SQLiteMemoryStore(IMemoryStore):
                     derived_from TEXT,    -- JSON string
                     contradictions TEXT,  -- JSON string
                     status TEXT
-                )
-            """)
-
-            # Relational Memory
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS relational_memory (
-                    category TEXT PRIMARY KEY,
-                    data TEXT, -- JSON string
-                    confidence REAL,
-                    evidence_count INTEGER,
-                    last_updated DATETIME
-                )
-            """)
-
-            # Emotional Thread
-            cursor.execute("""
-                CREATE TABLE IF NOT EXISTS emotional_thread (
-                    id TEXT PRIMARY KEY,
-                    current_state TEXT,
-                    recognized_from TEXT, -- JSON string
-                    should_acknowledge INTEGER, -- 0 or 1
-                    thread_length INTEGER,
-                    last_update DATETIME
                 )
             """)
 
@@ -97,9 +73,9 @@ class SQLiteMemoryStore(IMemoryStore):
             cursor.execute("""
                 INSERT INTO episodic_memory (
                     id, summary, full_text, timestamp, embedding,
-                    importance, emotional_valence, topics, entities,
+                    importance, topics, entities,
                     connections, status, consolidated_at
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 episode_id,
                 episode_data.get('summary'),
@@ -107,7 +83,6 @@ class SQLiteMemoryStore(IMemoryStore):
                 timestamp,
                 episode_data.get('embedding'), # Should be bytes/BLOB
                 episode_data.get('importance', 0.5),
-                episode_data.get('emotional_valence', 0.0),
                 json.dumps(episode_data.get('topics', [])),
                 json.dumps(episode_data.get('entities', [])),
                 json.dumps(episode_data.get('connections', [])),
@@ -318,70 +293,3 @@ class SQLiteMemoryStore(IMemoryStore):
             data['contradictions'] = json.loads(data['contradictions'])
             results.append(data)
         return results
-
-    def update_relational_memory(self, category: str, data: Dict[str, Any], confidence: float) -> bool:
-        now = datetime.now().isoformat()
-        with self._get_connection() as conn:
-            cursor = conn.cursor()
-            cursor.execute("""
-                INSERT OR REPLACE INTO relational_memory (
-                    category, data, confidence, evidence_count, last_updated
-                ) VALUES (
-                    ?, ?, ?, 
-                    COALESCE((SELECT evidence_count FROM relational_memory WHERE category = ?) + 1, 1),
-                    ?
-                )
-            """, (category, json.dumps(data), confidence, category, now))
-            conn.commit()
-            return True
-
-    def get_relational_memories(self, category: Optional[str] = None) -> List[Dict[str, Any]]:
-        with self._get_connection() as conn:
-            conn.row_factory = sqlite3.Row
-            cursor = conn.cursor()
-            if category:
-                cursor.execute("SELECT * FROM relational_memory WHERE category = ?", (category,))
-            else:
-                cursor.execute("SELECT * FROM relational_memory")
-            rows = cursor.fetchall()
-            
-        results = []
-        for row in rows:
-            data = dict(row)
-            data['data'] = json.loads(data['data'])
-            results.append(data)
-        return results
-
-    def update_emotional_thread(self, thread_data: Dict[str, Any]) -> bool:
-        thread_id = thread_data.get('id') or 'current'
-        now = datetime.now().isoformat()
-        with self._get_connection() as conn:
-            cursor = conn.cursor()
-            cursor.execute("""
-                INSERT OR REPLACE INTO emotional_thread (
-                    id, current_state, recognized_from, should_acknowledge, 
-                    thread_length, last_update
-                ) VALUES (?, ?, ?, ?, ?, ?)
-            """, (
-                thread_id,
-                thread_data.get('current_state'),
-                json.dumps(thread_data.get('recognized_from', [])),
-                1 if thread_data.get('should_acknowledge') else 0,
-                thread_data.get('thread_length', 1),
-                now
-            ))
-            conn.commit()
-            return True
-
-    def get_emotional_thread(self) -> Optional[Dict[str, Any]]:
-        with self._get_connection() as conn:
-            conn.row_factory = sqlite3.Row
-            cursor = conn.cursor()
-            cursor.execute("SELECT * FROM emotional_thread ORDER BY last_update DESC LIMIT 1")
-            row = cursor.fetchone()
-            if row:
-                data = dict(row)
-                data['recognized_from'] = json.loads(data['recognized_from'])
-                data['should_acknowledge'] = bool(data['should_acknowledge'])
-                return data
-        return None
