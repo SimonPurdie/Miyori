@@ -1,6 +1,7 @@
 import sqlite3
 import json
 import uuid
+import numpy as np
 from datetime import datetime
 from pathlib import Path
 from typing import List, Dict, Any, Optional
@@ -47,7 +48,8 @@ class SQLiteMemoryStore(IMemoryStore):
                     version_history TEXT, -- JSON string
                     derived_from TEXT,    -- JSON string
                     contradictions TEXT,  -- JSON string
-                    status TEXT
+                    status TEXT,
+                    embedding BLOB
                 )
             """)
 
@@ -266,14 +268,14 @@ class SQLiteMemoryStore(IMemoryStore):
     def add_semantic_fact(self, fact_data: Dict[str, Any]) -> str:
         fact_id = fact_data.get('id') or str(uuid.uuid4())
         now = datetime.now().isoformat()
-        
+
         with self._get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute("""
                 INSERT OR REPLACE INTO semantic_memory (
-                    id, fact, confidence, first_observed, last_confirmed, 
-                    version_history, derived_from, contradictions, status
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    id, fact, confidence, first_observed, last_confirmed,
+                    version_history, derived_from, contradictions, status, embedding
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 fact_id,
                 fact_data.get('fact'),
@@ -283,7 +285,8 @@ class SQLiteMemoryStore(IMemoryStore):
                 json.dumps(fact_data.get('version_history', [])),
                 json.dumps(fact_data.get('derived_from', [])),
                 json.dumps(fact_data.get('contradictions', [])),
-                fact_data.get('status', 'stable')
+                fact_data.get('status', 'stable'),
+                fact_data.get('embedding')  # Already in bytes format
             ))
             conn.commit()
         return fact_id
@@ -294,12 +297,15 @@ class SQLiteMemoryStore(IMemoryStore):
             cursor = conn.cursor()
             cursor.execute("SELECT * FROM semantic_memory WHERE status = ? LIMIT ?", (status, limit))
             rows = cursor.fetchall()
-            
+
         results = []
         for row in rows:
             data = dict(row)
             data['version_history'] = json.loads(data['version_history'])
             data['derived_from'] = json.loads(data['derived_from'])
             data['contradictions'] = json.loads(data['contradictions'])
+            # Convert embedding bytes back to list of floats
+            if data['embedding'] is not None:
+                data['embedding'] = np.frombuffer(data['embedding'], dtype=np.float32).tolist()
             results.append(data)
         return results

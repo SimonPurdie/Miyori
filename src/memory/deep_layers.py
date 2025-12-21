@@ -1,14 +1,17 @@
 from google import genai
 import json
+import numpy as np
 from typing import List, Dict, Any
 from src.interfaces.memory import IMemoryStore
 from src.utils.config import Config
+from src.utils.embeddings import EmbeddingService
 
 class SemanticExtractor:
     def __init__(self, client: genai.Client, store: IMemoryStore):
         self.client = client
         self.store = store
         self.model_name = Config.data.get("memory", {}).get("semantic_model")
+        self.embedding_service = EmbeddingService()
 
     async def extract_facts_from_batch(self, clusters: List[List[Dict[str, Any]]]):
         """Extract semantic facts from multiple clusters in a single API call."""
@@ -39,20 +42,28 @@ class SemanticExtractor:
             ))
             
             # Parse facts from response
-            facts = [line.strip("- ").strip() for line in response.text.split("\n") if line.strip()]
-            
-            # Store facts with source episode tracking
-            all_episode_ids = [ep['id'] for cluster in clusters for ep in cluster]
-            
-            for fact in facts:
-                if len(fact) > 5:
+            raw_facts = [line.strip("- ").strip() for line in response.text.split("\n") if line.strip()]
+            facts = [fact for fact in raw_facts if len(fact) > 5]
+
+            if facts:
+                # Generate embeddings for all facts in batch
+                embeddings = self.embedding_service.batchEmbedContents(facts)
+
+                # Store facts with source episode tracking
+                all_episode_ids = [ep['id'] for cluster in clusters for ep in cluster]
+
+                for fact, embedding in zip(facts, embeddings):
+                    # Convert embedding to bytes for database storage
+                    embedding_bytes = np.array(embedding, dtype=np.float32).tobytes()
+
                     self.store.add_semantic_fact({
                         "fact": fact,
                         "confidence": 0.7,
                         "status": "stable",
-                        "derived_from": all_episode_ids  # Track which episodes contributed
+                        "derived_from": all_episode_ids,  # Track which episodes contributed
+                        "embedding": embedding_bytes
                     })
-                    
+
             print(f"Extracted {len(facts)} facts from {len(clusters)} clusters ({len(all_episode_ids)} episodes)")
             
         except Exception as e:

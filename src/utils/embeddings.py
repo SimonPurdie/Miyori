@@ -43,7 +43,7 @@ class EmbeddingService:
 
         try:
             # Split into batches of 250 as per API limits
-            batch_size = 250
+            batch_size = 100
             all_embeddings = []
 
             for i in range(0, len(texts), batch_size):
