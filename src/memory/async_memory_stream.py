@@ -63,6 +63,9 @@ class AsyncMemoryStream:
         self._recent_turns: List[str] = []
         self._max_recent_turns = 3  # Keep up to last 3 turns (earliest to most recent)
 
+        # Track changes for selective refreshing
+        self._last_turns_state: List[str] = []
+
     async def start(self):
         """Start the background memory streaming task."""
         if self._running:
@@ -116,7 +119,6 @@ class AsyncMemoryStream:
         try:
             current_embedding = self.embedding_service.embed(current_context)
             if self._cache.is_valid(current_embedding, self.max_cache_turns):
-                # Increment turn count
                 self._cache.turn_count += 1
 
                 memory_logger.log_event("cache_hit", {
@@ -178,12 +180,13 @@ class AsyncMemoryStream:
         """Background worker that periodically refreshes cache."""
         while self._running:
             try:
-                # Only refresh if we have context to work with
-                if self._recent_turns:
+                # Only refresh if we have context to work with and turns have changed
+                if self._recent_turns and self._recent_turns != self._last_turns_state:
                     await self._refresh_cache()
+                    self._last_turns_state = self._recent_turns.copy()
 
-                # Sleep for a bit before next refresh
-                await asyncio.sleep(1.0)  # Refresh every second if context changes
+                # Sleep for a bit before next check
+                await asyncio.sleep(1.0)  # Check for changes every second
 
             except asyncio.CancelledError:
                 break
