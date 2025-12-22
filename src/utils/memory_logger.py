@@ -18,7 +18,11 @@ class MemoryLogger:
         self._verbose_checked = False
         self._is_verbose = False
 
-    def log_event(self, event_type: str, details: dict, level: str = "DEBUG"):
+    def log_event(self, event_type: str, details: dict = None , level: str = "DEBUG"):
+
+        if details is None:
+            details = {}
+            
         """Log a memory-related event with its details."""
         if level == "DEBUG":
             if not self._verbose_checked:
