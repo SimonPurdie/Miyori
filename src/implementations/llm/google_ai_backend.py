@@ -52,6 +52,10 @@ class GoogleAIBackend(ILLMBackend):
             from src.memory.memory_retriever import MemoryRetriever
             from src.memory.async_memory_stream import AsyncMemoryStream
 
+            memory_config = Config.data.get("memory", {})
+            self.memory_enabled = memory_config.get("enabled", True)
+            self.feature_flags = memory_config.get("feature_flags", {})
+
             self.store = SQLiteMemoryStore()
             self.embedding_service = EmbeddingService()
             self.episodic_manager = EpisodicMemoryManager(self.store, self.embedding_service)
@@ -63,11 +67,6 @@ class GoogleAIBackend(ILLMBackend):
                 self.memory_retriever,
                 self.embedding_service
             )
-            if self.memory_enabled:
-                asyncio.run_coroutine_threadsafe(
-                    self.async_memory_stream.start(),
-                    self._loop
-                )
 
             self.context_builder = ContextBuilder(
                 self.store,
@@ -84,15 +83,6 @@ class GoogleAIBackend(ILLMBackend):
                 self.store, self.episodic_manager, 
                 self.semantic_extractor
             )
-            
-            memory_config = Config.data.get("memory", {})
-            self.memory_enabled = memory_config.get("enabled", True)
-            self.feature_flags = memory_config.get("feature_flags", {})
-
-            # Async Background Loop for memory tasks
-            self._loop = asyncio.new_event_loop()
-            self._loop_thread = threading.Thread(target=self._loop.run_forever, daemon=True)
-            self._loop_thread.start()
 
             # Start async memory streaming
             if self.memory_enabled:

@@ -132,7 +132,7 @@ class ContextBuilder:
             seven_days_ago = (datetime.now() - timedelta(days=7)).isoformat()
             
             # Get recent episodes directly without vector search
-            all_episodes = self.store.get_all_episodes(status='active')
+            all_episodes = self.store.search_episodes([0.0]*768, limit=100, status='active')
             episodic_memories = [
                 e for e in all_episodes 
                 if e.get('timestamp', '') >= seven_days_ago 
@@ -140,7 +140,7 @@ class ContextBuilder:
             ][:5]  # Limit to 5
             
             # Get high-confidence facts
-            all_facts = self.store.get_all_semantic_facts(status='active')
+            all_facts = self.store.get_semantic_facts()
             semantic_facts = [
                 f for f in all_facts 
                 if f.get('confidence', 0) >= 0.5
