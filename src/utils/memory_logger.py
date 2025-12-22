@@ -13,13 +13,20 @@ class MemoryLogger:
         if not self.log_dir.exists():
             os.makedirs(self.log_dir)
         self.log_file = self.log_dir / "memory.log"
-        self.verbose = Config.data.get("memory", {}).get("verbose_logging", False)
+
+        # Cache verbose logging setting to avoid repeated config lookups
+        self._verbose_checked = False
+        self._is_verbose = False
 
     def log_event(self, event_type: str, details: dict, level: str = "DEBUG"):
         """Log a memory-related event with its details."""
-        if level == "DEBUG" and not self.verbose:
-            return
-            
+        if level == "DEBUG":
+            if not self._verbose_checked:
+                self._is_verbose = Config.data.get("memory", {}).get("verbose_logging", False)
+                self._verbose_checked = True
+            if not self._is_verbose:
+                return
+
         timestamp = datetime.datetime.now().isoformat()
         log_entry = {
             "timestamp": timestamp,
