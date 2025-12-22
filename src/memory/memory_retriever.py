@@ -1,4 +1,5 @@
 from typing import List, Dict, Any, Optional, Tuple
+import json
 import sqlite3
 import numpy as np
 from sklearn.cluster import KMeans
@@ -102,7 +103,6 @@ class MemoryRetriever:
 
             # Parse JSON fields
             if table == 'episodic_memory':
-                import json
                 data['full_text'] = json.loads(data['full_text'])
                 data['topics'] = json.loads(data['topics'])
                 data['entities'] = json.loads(data['entities'])
