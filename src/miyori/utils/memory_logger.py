@@ -1,14 +1,13 @@
 import os
 import datetime
 import json
-from pathlib import Path
-from src.utils.config import Config
+from miyori.utils.config import Config
 
 class MemoryLogger:
     """Utility for logging memory decisions and metrics for observability."""
     
     def __init__(self):
-        project_root = Path(__file__).parent.parent.parent
+        project_root = Config.get_project_root()
         self.log_dir = project_root / "logs"
         if not self.log_dir.exists():
             os.makedirs(self.log_dir)

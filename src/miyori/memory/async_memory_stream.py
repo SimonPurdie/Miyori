@@ -3,9 +3,9 @@ from typing import List, Dict, Any, Optional
 from dataclasses import dataclass
 from datetime import datetime
 
-from src.memory.memory_retriever import MemoryRetriever
-from src.utils.embeddings import EmbeddingService
-from src.utils.memory_logger import memory_logger
+from miyori.memory.memory_retriever import MemoryRetriever
+from miyori.utils.embeddings import EmbeddingService
+from miyori.utils.memory_logger import memory_logger
 
 @dataclass
 class MemoryCache:

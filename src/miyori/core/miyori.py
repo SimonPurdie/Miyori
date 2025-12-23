@@ -1,12 +1,10 @@
 import time
-import json
-from pathlib import Path
-from src.interfaces.speech_input import ISpeechInput
-from src.interfaces.speech_output import ISpeechOutput
-from src.interfaces.llm_backend import ILLMBackend
-from src.core.tool_registry import ToolRegistry
+from miyori.interfaces.speech_input import ISpeechInput
+from miyori.interfaces.speech_output import ISpeechOutput
+from miyori.interfaces.llm_backend import ILLMBackend
+from miyori.core.tool_registry import ToolRegistry
 from typing import Dict, Any, Callable
-from src.utils.config import Config
+from miyori.utils.config import Config
 
 
 class MiyoriCore:
@@ -67,7 +65,7 @@ class MiyoriCore:
 
     def _handle_with_tools(self, user_input: str, on_chunk: Callable[[str], None]) -> None:
         """Handle user input with tool support."""
-        from src.utils import logger
+        from miyori.utils import logger
         
         def on_tool_call(tool_name: str, parameters: Dict[str, Any]) -> str:
             """Execute tool and return result."""

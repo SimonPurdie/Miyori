@@ -1,7 +1,7 @@
 from google import genai
 from typing import Optional
-from src.utils.memory_logger import memory_logger
-from src.utils.config import Config
+from miyori.utils.memory_logger import memory_logger
+from miyori.utils.config import Config
 
 class MemoryGate:
     def __init__(self, client: genai.Client):

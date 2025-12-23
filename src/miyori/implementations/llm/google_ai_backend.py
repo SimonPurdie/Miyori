@@ -1,14 +1,12 @@
 from google import genai
 from google.genai import types
-import json
-from pathlib import Path
 from typing import Callable, List, Dict, Any, Union
 import asyncio
 import threading
 
-from src.utils.config import Config
-from src.core.tools import Tool
-from src.interfaces.llm_backend import ILLMBackend
+from miyori.utils.config import Config
+from miyori.core.tools import Tool
+from miyori.interfaces.llm_backend import ILLMBackend
 
 class GoogleAIBackend(ILLMBackend):
     def __init__(self):
@@ -18,7 +16,7 @@ class GoogleAIBackend(ILLMBackend):
 
         # Load System Instructions
         # e:/_Projects/Miyori/src/implementations/llm/google_ai_backend.py
-        project_root = Path(__file__).parent.parent.parent.parent
+        project_root = Config.get_project_root()
         system_instruction_file = llm_config.get("system_instruction_file", "system_instructions.txt")
         self.system_instruction_path = project_root / system_instruction_file
         self.system_instruction = None
@@ -43,14 +41,14 @@ class GoogleAIBackend(ILLMBackend):
         
         # Memory Components
         try:
-            from src.memory.sqlite_store import SQLiteMemoryStore
-            from src.utils.embeddings import EmbeddingService
-            from src.memory.episodic import EpisodicMemoryManager
-            from src.memory.summarizer import Summarizer
-            from src.memory.context import ContextBuilder
-            from src.memory.gates import MemoryGate
-            from src.memory.memory_retriever import MemoryRetriever
-            from src.memory.async_memory_stream import AsyncMemoryStream
+            from miyori.memory.sqlite_store import SQLiteMemoryStore
+            from miyori.utils.embeddings import EmbeddingService
+            from miyori.memory.episodic import EpisodicMemoryManager
+            from miyori.memory.summarizer import Summarizer
+            from miyori.memory.context import ContextBuilder
+            from miyori.memory.gates import MemoryGate
+            from miyori.memory.memory_retriever import MemoryRetriever
+            from miyori.memory.async_memory_stream import AsyncMemoryStream
 
             memory_config = Config.data.get("memory", {})
             self.memory_enabled = memory_config.get("enabled", True)
@@ -76,7 +74,7 @@ class GoogleAIBackend(ILLMBackend):
             self.gate = MemoryGate(self.client)
             
             # Phase 3 Components
-            from src.memory.consolidation import ConsolidationManager, SemanticExtractor
+            from miyori.memory.consolidation import ConsolidationManager, SemanticExtractor
             
             self.semantic_extractor = SemanticExtractor(self.client, self.store)
             self.consolidation = ConsolidationManager(
@@ -92,6 +90,7 @@ class GoogleAIBackend(ILLMBackend):
                 self._run_async(self.async_memory_stream.start())
                 print("Memory system initialized and enabled with dual-mode retrieval.")
         except Exception as e:
+            import traceback
             print(f"Warning: Failed to initialize memory system: {e}")
             self.memory_enabled = False
 
@@ -103,7 +102,7 @@ class GoogleAIBackend(ILLMBackend):
 
     def _send_to_log(self, logname: str, content: Union[str, List[str]]):
         try:
-            logs_dir = Path(__file__).parent.parent.parent.parent / "logs"
+            logs_dir = Config.get_project_root() / "logs"
             log_path = logs_dir / f"{logname}.log"
 
             logs_dir.mkdir(exist_ok=True)

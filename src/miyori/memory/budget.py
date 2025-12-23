@@ -1,7 +1,7 @@
 from typing import List, Dict, Any
-from src.interfaces.memory import IMemoryStore
-from src.memory.scoring import ImportanceScorer
-from src.utils.memory_logger import memory_logger
+from miyori.interfaces.memory import IMemoryStore
+from miyori.memory.scoring import ImportanceScorer
+from miyori.utils.memory_logger import memory_logger
 
 class MemoryBudget:
     def __init__(self, store: IMemoryStore, config: Dict[str, Any]):

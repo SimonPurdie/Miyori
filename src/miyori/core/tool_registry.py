@@ -1,5 +1,5 @@
 from typing import Dict, List, Optional, Any
-from src.core.tools import Tool
+from miyori.core.tools import Tool
 
 class ToolRegistry:
     """Central registry for all available tools."""

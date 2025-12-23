@@ -7,7 +7,7 @@ that takes a prompt and a callback, streaming AI-generated response chunks.
 
 from abc import ABC, abstractmethod
 from typing import Callable, List, Dict, Any
-from src.core.tools import Tool
+from miyori.core.tools import Tool
 
 
 class ILLMBackend(ABC):

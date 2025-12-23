@@ -14,7 +14,7 @@ call .venv\Scripts\activate
 
 echo Starting Miyori...
 title Miyori
-python -m src.main
+uv run python -m miyori.main
 
 if %ERRORLEVEL% neq 0 (
     echo.

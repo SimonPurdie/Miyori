@@ -2,8 +2,8 @@ import sys
 import os
 import datetime
 import io
-from pathlib import Path
 from contextlib import contextmanager
+from miyori.utils.config import Config
 
 class Tee:
     """
@@ -49,7 +49,7 @@ def setup_logging():
     global _stdout_tee, _stderr_tee
 
     # Define logs directory at project root
-    project_root = Path(__file__).parent.parent.parent
+    project_root = Config.get_project_root()
     logs_dir = project_root / "logs" / "terminal"
     
     # Create logs directory if it doesn't exist

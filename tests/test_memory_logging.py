@@ -11,16 +11,16 @@ import time
 # Add project root to path so we can import src
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from src.utils.config import Config
-from src.interfaces.speech_input import ISpeechInput
-from src.interfaces.speech_output import ISpeechOutput
-from src.implementations.llm.google_ai_backend import GoogleAIBackend
-from src.core.miyori import MiyoriCore
-from src.core.tool_registry import ToolRegistry
-from src.tools.web_search import web_search_tool
-from src.tools.file_ops import file_ops_tool
-from src.tools.memory_search import create_memory_search_tool
-from src.utils.logger import setup_logging
+from miyori.utils.config import Config
+from miyori.interfaces.speech_input import ISpeechInput
+from miyori.interfaces.speech_output import ISpeechOutput
+from miyori.implementations.llm.google_ai_backend import GoogleAIBackend
+from miyori.core.miyori import MiyoriCore
+from miyori.core.tool_registry import ToolRegistry
+from miyori.tools.web_search import web_search_tool
+from miyori.tools.file_ops import file_ops_tool
+from miyori.tools.memory_search import create_memory_search_tool
+from miyori.utils.logger import setup_logging
 
 
 class MockSpeechInput(ISpeechInput):

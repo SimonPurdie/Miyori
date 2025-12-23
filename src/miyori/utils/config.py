@@ -11,7 +11,7 @@ class Config:
         """Finds config.json relative to this file and loads it into memory."""
         if not cls.data:
             # Move up from src/utils/ to project root
-            cls._root = Path(__file__).resolve().parent.parent.parent
+            cls._root = Path(__file__).resolve().parents[3]
             config_path = cls._root / "config.json"
             
             if config_path.exists():
@@ -33,3 +33,10 @@ class Config:
             return value
         except (KeyError, TypeError):
             return default
+
+    @classmethod
+    def get_project_root(cls) -> Path:
+        """Returns the project root path."""
+        if cls._root is None:
+            cls.load()
+        return cls._root

@@ -7,3 +7,4 @@ kokoro
 sounddevice
 numpy
 ddgs
+en-core-web-sm==3.8.0 # part of sklearn deps - here so uv sync doesnt uninstall

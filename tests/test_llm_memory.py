@@ -6,10 +6,10 @@ from typing import Dict, Any
 # Add project root to path so we can import src
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
-from src.utils.config import Config
+from miyori.utils.config import Config
 Config.load()
-from src.implementations.llm.google_ai_backend import GoogleAIBackend
-from src.core.tools import Tool, ToolParameter
+from miyori.implementations.llm.google_ai_backend import GoogleAIBackend
+from miyori.core.tools import Tool, ToolParameter
 
 # Dummy tool for testing when no tools are needed
 def dummy_tool_function():

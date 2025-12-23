@@ -2,9 +2,9 @@ from google import genai
 import json
 import numpy as np
 from typing import List, Dict, Any
-from src.interfaces.memory import IMemoryStore
-from src.utils.config import Config
-from src.utils.embeddings import EmbeddingService
+from miyori.interfaces.memory import IMemoryStore
+from miyori.utils.config import Config
+from miyori.utils.embeddings import EmbeddingService
 
 class SemanticExtractor:
     def __init__(self, client: genai.Client, store: IMemoryStore):

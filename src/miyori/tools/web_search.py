@@ -1,5 +1,5 @@
 from ddgs import DDGS
-from src.core.tools import Tool, ToolParameter
+from miyori.core.tools import Tool, ToolParameter
 
 def web_search(query: str, num_results: int = 3) -> str:
     """

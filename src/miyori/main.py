@@ -1,15 +1,16 @@
-from src.implementations.speech.porcupine_cobra_vosk import PorcupineCobraVosk
-from src.implementations.tts.kokoro_tts_output import KokoroTTSOutput
-from src.implementations.llm.google_ai_backend import GoogleAIBackend
-from src.core.miyori import MiyoriCore
-from src.core.tool_registry import ToolRegistry
-from src.tools.web_search import web_search_tool
-from src.tools.file_ops import file_ops_tool
-from src.tools.memory_search import create_memory_search_tool
-from src.utils.logger import setup_logging
-from src.utils.config import Config
+from miyori.implementations.speech.porcupine_cobra_vosk import PorcupineCobraVosk
+from miyori.implementations.tts.kokoro_tts_output import KokoroTTSOutput
+from miyori.implementations.llm.google_ai_backend import GoogleAIBackend
+from miyori.core.miyori import MiyoriCore
+from miyori.core.tool_registry import ToolRegistry
+from miyori.tools.web_search import web_search_tool
+from miyori.tools.file_ops import PROJECT_ROOT, file_ops_tool
+from miyori.tools.memory_search import create_memory_search_tool
+from miyori.utils.logger import setup_logging
+from miyori.utils.config import Config
 
 def main():
+    PROJECT_ROOT
     Config.load()
     setup_logging()
             

@@ -5,20 +5,15 @@ from datetime import datetime
 import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 sys.path.append(str(Path(__file__).parent.parent))
-from src.utils.config import Config
+from miyori.utils.config import Config
 Config.load()
-from src.memory.sqlite_store import SQLiteMemoryStore
-from src.memory.episodic import EpisodicMemoryManager
-from src.utils.embeddings import EmbeddingService
+from miyori.memory.sqlite_store import SQLiteMemoryStore
+from miyori.memory.episodic import EpisodicMemoryManager
+from miyori.utils.embeddings import EmbeddingService
 
 def test_memory_search():
-    db_path = "memory.db"
 
-    if not os.path.exists(db_path):
-        print("ERROR: Database file 'memory.db' not found.")
-        return False
-
-    store = SQLiteMemoryStore(db_path)
+    store = SQLiteMemoryStore()
     embedding_service = EmbeddingService()
     manager = EpisodicMemoryManager(store, embedding_service)
 

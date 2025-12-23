@@ -4,9 +4,9 @@ import numpy as np
 from sklearn.cluster import HDBSCAN
 #from sklearn.preprocessing import normalize
 from typing import List, Dict, Any, Tuple
-from src.interfaces.memory import IMemoryStore
-from src.memory.deep_layers import SemanticExtractor
-from src.utils.config import Config
+from miyori.interfaces.memory import IMemoryStore
+from miyori.memory.deep_layers import SemanticExtractor
+from miyori.utils.config import Config
 
 class EpisodeClustering:
     def __init__(self):

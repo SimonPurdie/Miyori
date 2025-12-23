@@ -1,8 +1,8 @@
 from typing import Dict, Any, List
-from src.core.tools import Tool, ToolParameter
-from src.memory.memory_retriever import MemoryRetriever
-from src.utils.embeddings import EmbeddingService
-from src.utils.memory_logger import memory_logger
+from miyori.core.tools import Tool, ToolParameter
+from miyori.memory.memory_retriever import MemoryRetriever
+from miyori.utils.embeddings import EmbeddingService
+from miyori.utils.memory_logger import memory_logger
 
 class MemorySearchTool:
     """Tool for active memory search that agents can call explicitly."""

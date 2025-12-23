@@ -2,13 +2,12 @@ import re
 import threading
 import queue
 import logging
-from pathlib import Path
 from functools import partial
 import sounddevice as sd
 import numpy as np
 from kokoro import KPipeline
-from src.interfaces.speech_output import ISpeechOutput
-from src.implementations.tts.speech_pipeline import SpeechPipeline
+from miyori.interfaces.speech_output import ISpeechOutput
+from miyori.implementations.tts.speech_pipeline import SpeechPipeline
 
 def _kokoro_worker(text_queue, audio_queue, pipeline, voice, speed):
     """

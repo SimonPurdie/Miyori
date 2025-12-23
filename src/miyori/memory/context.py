@@ -71,7 +71,7 @@ class ContextBuilder:
             user_message: Current user message (for backward compatibility)
             tool_results: Results from active memory search tool (privileged budget)
         """
-        from src.utils.memory_logger import memory_logger
+        from miyori.utils.memory_logger import memory_logger
 
         context_parts = []
         tokens_used = 0

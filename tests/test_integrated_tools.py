@@ -8,12 +8,12 @@ from typing import Dict, Any
 # Add project root to path
 sys.path.append(str(Path(__file__).parent.parent))
 
-from src.implementations.llm.google_ai_backend import GoogleAIBackend
-from src.core.tool_registry import ToolRegistry
-from src.tools.web_search import web_search_tool
-from src.tools.file_ops import file_ops_tool
-from src.utils import logger
-from src.utils.config import Config
+from miyori.implementations.llm.google_ai_backend import GoogleAIBackend
+from miyori.core.tool_registry import ToolRegistry
+from miyori.tools.web_search import web_search_tool
+from miyori.tools.file_ops import file_ops_tool
+from miyori.utils import logger
+from miyori.utils.config import Config
 Config.load()
 
 def run_test_case(backend, registry, prompt):

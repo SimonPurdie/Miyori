@@ -22,33 +22,17 @@ def run_consolidation(db_path: Optional[str] = None, verbose: bool = True) -> bo
         bool: True if consolidation completed successfully, False otherwise
     """
     try:
-        # Determine project root and add src to path
-        if hasattr(sys, '_MEIPASS'):
-            # Running as PyInstaller bundle
-            project_root = Path(sys._MEIPASS).parent
-        else:
-            # Running as script or import
-            current_file = Path(__file__).resolve()
-            if current_file.name == 'run_consolidation.py':
-                # Running as standalone script from src/utils/
-                project_root = current_file.parent.parent.parent
-            else:
-                # Imported from elsewhere
-                project_root = current_file.parent.parent.parent
-
-        # Add src to path for imports
-        src_path = project_root / "src"
-        if str(src_path) not in sys.path:
-            sys.path.insert(0, str(src_path))
-
         # Import required modules
         from google import genai
-        from src.memory.consolidation import ConsolidationManager
-        from src.memory.deep_layers import SemanticExtractor
-        from src.memory.episodic import EpisodicMemoryManager
-        from src.memory.sqlite_store import SQLiteMemoryStore
-        from src.utils.embeddings import EmbeddingService
-        from src.utils.config import Config
+        from miyori.memory.consolidation import ConsolidationManager
+        from miyori.memory.deep_layers import SemanticExtractor
+        from miyori.memory.episodic import EpisodicMemoryManager
+        from miyori.memory.sqlite_store import SQLiteMemoryStore
+        from miyori.utils.embeddings import EmbeddingService
+        from miyori.utils.config import Config
+
+        project_root = Config.get_project_root()
+
 
         if verbose:
             print("=== Memory Consolidation ===")

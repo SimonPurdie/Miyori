@@ -1,7 +1,5 @@
 from google import genai
-import json
-from pathlib import Path
-from src.utils.config import Config
+from miyori.utils.config import Config
 
 class Summarizer:
     def __init__(self, client: genai.Client = None):

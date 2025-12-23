@@ -2,7 +2,8 @@ import os
 import datetime
 from pathlib import Path
 from typing import Dict, List, Optional, Type
-from src.core.tools import Tool, ToolParameter
+from miyori.core.tools import Tool, ToolParameter
+from miyori.utils.config import Config
 import mimetypes
 
 # Load system-wide MIME database
@@ -80,7 +81,7 @@ def _format_size(size: int) -> str:
 
 # Configuration - set allowed directories
 # We'll resolve these relative to the project root
-PROJECT_ROOT = Path(__file__).parent.parent.parent
+PROJECT_ROOT = Config.get_project_root()
 ALLOWED_DIRECTORIES = [
     (PROJECT_ROOT / "workspace").resolve(), 
     (PROJECT_ROOT / "documents").resolve()

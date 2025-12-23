@@ -3,11 +3,12 @@ import uuid
 import numpy as np
 from datetime import datetime
 from typing import List, Dict, Any, Optional
-from src.interfaces.memory import IMemoryStore
-from src.utils.embeddings import EmbeddingService
-from src.memory.scoring import ImportanceScorer
-from src.memory.budget import MemoryBudget
-from src.utils.memory_logger import memory_logger
+from miyori.interfaces.memory import IMemoryStore
+from miyori.utils.embeddings import EmbeddingService
+from miyori.memory.scoring import ImportanceScorer
+from miyori.memory.budget import MemoryBudget
+from miyori.utils.memory_logger import memory_logger
+from miyori.utils.config import Config
 
 class EmbeddingQueue:
     def __init__(self, store: IMemoryStore, embedding_service: EmbeddingService):
@@ -66,15 +67,8 @@ class EpisodicMemoryManager:
         self.embedding_service = embedding_service
         self.queue = EmbeddingQueue(store, embedding_service)
         
-        # Load config for budget
-        import json
-        from pathlib import Path
-        project_root = Path(__file__).parent.parent.parent
-        config_path = project_root / "config.json"
-        config = {}
-        if config_path.exists():
-            with open(config_path, 'r') as f:
-                config = json.load(f).get('memory', {})
+        project_root = Config.get_project_root()
+        config = Config.get('memory', {})
         
         self.budget = MemoryBudget(store, config)
 

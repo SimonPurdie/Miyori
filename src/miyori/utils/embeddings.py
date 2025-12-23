@@ -1,7 +1,7 @@
 from google import genai
 from google.genai import types
 from typing import List
-from src.utils.config import Config
+from miyori.utils.config import Config
 
 class EmbeddingService:
     def __init__(self):

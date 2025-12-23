@@ -3,13 +3,13 @@ import json
 import uuid
 import numpy as np
 from datetime import datetime
-from pathlib import Path
 from typing import List, Dict, Any, Optional
-from src.interfaces.memory import IMemoryStore
+from miyori.utils.config import Config
+from miyori.interfaces.memory import IMemoryStore
 
 class SQLiteMemoryStore(IMemoryStore):
-    def __init__(self, db_path: str = "memory.db"):
-        self.db_path = Path(db_path)
+    def __init__(self):
+        self.db_path = Config.get_project_root() / "memory.db"
         self._init_db()
 
     def _get_connection(self):
@@ -93,7 +93,7 @@ class SQLiteMemoryStore(IMemoryStore):
             ))
             conn.commit()
         
-        from src.utils.memory_logger import memory_logger
+        from miyori.utils.memory_logger import memory_logger
         memory_logger.log_event("db_add_episode", {
             "id": episode_id,
             "summary": episode_data.get('summary', '')[:50] + "...",
@@ -138,7 +138,7 @@ class SQLiteMemoryStore(IMemoryStore):
             cursor.execute(query, tuple(values))
             conn.commit()
             
-            from src.utils.memory_logger import memory_logger
+            from miyori.utils.memory_logger import memory_logger
             memory_logger.log_event("db_update_episode", {
                 "id": episode_id,
                 "updates": list(updates.keys()),
@@ -198,7 +198,7 @@ class SQLiteMemoryStore(IMemoryStore):
         results.sort(key=lambda x: x['similarity'], reverse=True)
         final_results = results[:limit]
         
-        from src.utils.memory_logger import memory_logger
+        from miyori.utils.memory_logger import memory_logger
         memory_logger.log_event("db_search_episodes", {
             "status": status,
             "total_candidates": len(results),
@@ -233,7 +233,7 @@ class SQLiteMemoryStore(IMemoryStore):
             data['connections'] = json.loads(data['connections'])
             results.append(data)
 
-        from src.utils.memory_logger import memory_logger
+        from miyori.utils.memory_logger import memory_logger
         memory_logger.log_event("db_get_unconsolidated_episodes", {
             "status": status,
             "limit": limit,
@@ -258,7 +258,7 @@ class SQLiteMemoryStore(IMemoryStore):
             """, [now] + episode_ids)
             conn.commit()
 
-            from src.utils.memory_logger import memory_logger
+            from miyori.utils.memory_logger import memory_logger
             memory_logger.log_event("db_mark_episodes_consolidated", {
                 "episode_count": len(episode_ids),
                 "success": cursor.rowcount > 0

@@ -5,8 +5,8 @@ import pvporcupine
 import json
 from vosk import Model, KaldiRecognizer
 from collections import deque
-from src.interfaces.speech_input import ISpeechInput
-from src.utils.config import Config
+from miyori.interfaces.speech_input import ISpeechInput
+from miyori.utils.config import Config
 
 class PorcupineCobraVosk(ISpeechInput):
     def __init__(self):

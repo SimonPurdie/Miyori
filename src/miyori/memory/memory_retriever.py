@@ -4,8 +4,8 @@ import sqlite3
 import numpy as np
 from sklearn.cluster import KMeans
 from sklearn.metrics.pairwise import cosine_similarity
-from src.interfaces.memory import IMemoryStore
-from src.utils.memory_logger import memory_logger
+from miyori.interfaces.memory import IMemoryStore
+from miyori.utils.memory_logger import memory_logger
 
 class MemoryRetriever:
     """
