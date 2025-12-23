@@ -4,13 +4,12 @@ from miyori.implementations.llm.google_ai_backend import GoogleAIBackend
 from miyori.core.miyori import MiyoriCore
 from miyori.core.tool_registry import ToolRegistry
 from miyori.tools.web_search import web_search_tool
-from miyori.tools.file_ops import PROJECT_ROOT, file_ops_tool
+from miyori.tools.file_ops import file_ops_tool
 from miyori.tools.memory_search import create_memory_search_tool
 from miyori.utils.logger import setup_logging
 from miyori.utils.config import Config
 
 def main():
-    PROJECT_ROOT
     Config.load()
     setup_logging()
             
