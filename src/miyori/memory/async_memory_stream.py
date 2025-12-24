@@ -100,7 +100,6 @@ class AsyncMemoryStream:
             if not context_text.strip():
                 memory_logger.log_event("cache_refresh_skipped",{"reason":"empty_context"})
 
-            context_changed = True
             if self._cache is not None:
                 if self._cache.context_text == context_text:
                     memory_logger.log_event("cache_refresh_skipped", {"reason": "context_unchanged"
@@ -108,17 +107,6 @@ class AsyncMemoryStream:
                     return
             
                 new_embedding = self.embedding_service.embed(context_text)
-
-                #old_embedding_arr = np.array(self._cache.context_embedding).reshape(1, -1)
-                #new_embedding_arr = np.array(new_embedding).reshape(1, -1)
-
-                #from sklearn.metrics.pairwise import cosine_similarity
-                #similarity = cosine_similarity(old_embedding_arr, new_embedding_arr)[0, 0]
-
-                #memory_logger.log_event("context_similarity", { 
-                #    "similarity": float(similarity), 
-                #    "threshold": 0.7
-                #})
             else:
                 new_embedding = self.embedding_service.embed("context_text")
             
