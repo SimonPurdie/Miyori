@@ -131,11 +131,8 @@ class MockMiyoriCore:
                 break
 
         # Simulate streaming response chunks
-        words = response_text.split()
-        for i, word in enumerate(words):
-            chunk = word + " " if i < len(words) - 1 else word
-            on_chunk_callback(chunk)
-            time.sleep(random.uniform(0.1, 0.3))  # Simulate typing/streaming delay
+        on_chunk_callback(response_text)
+        time.sleep(random.uniform(0.1, 0.3))  # Simulate typing/streaming delay
 
         print(f"[MOCK CORE] Finished processing input")
 
