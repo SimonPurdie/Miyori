@@ -35,14 +35,12 @@ class MiyoriCore:
         self.last_interaction_time = time.time()
         
         # Handle special commands
-        if "go to sleep" in text.lower():
-            self.speech_output.speak("ok goodnight")
-            on_chunk("ok goodnight")
+        if "go to sleep" in text.lower():            
             self.last_interaction_time = 0
+            on_chunk("ok goodnight")
             return
         
         if set(['exit', 'goodbye']).intersection(text.lower().split()):
-            self.speech_output.speak("Goodbye!")
             on_chunk("Goodbye!")
             return
         
