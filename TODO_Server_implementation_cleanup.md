@@ -5,7 +5,6 @@
 - [ ] Voice Thread Lifecycle Management
 - [ ] Wake Word State Synchronization
 - [ ] SSE Connection Management
-- [ ]
 
 ### 1. **Speech Output Lifecycle & State Coordination**
 **Current Issue**: The plan has `await asyncio.sleep(0.1)` as a placeholder for detecting when speech completes.
