@@ -114,6 +114,7 @@ class PorcupineCobraVosk(ISpeechInput):
     def _transcribe(self, pcm_frames):
         """Converts PCM frames to text using Vosk."""
         print("[Status] Transcribing with Vosk...")
+        self.vosk_recognizer.Reset()
         
         # Flatten and convert to raw bytes
         flat_pcm = [item for frame in pcm_frames for item in frame]
