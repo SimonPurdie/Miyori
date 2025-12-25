@@ -1,5 +1,4 @@
 import uvicorn
-import asyncio
 from miyori.implementations.speech.porcupine_cobra_vosk import PorcupineCobraVosk
 from miyori.implementations.tts.kokoro_tts_output import KokoroTTSOutput
 from miyori.implementations.llm.google_ai_backend import GoogleAIBackend
