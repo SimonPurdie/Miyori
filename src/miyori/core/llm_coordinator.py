@@ -78,7 +78,7 @@ class LLMCoordinator:
                 if history[i]["role"] == "user":
                     # Create a copy of the message so we don't modify the one in history
                     history[i] = history[i].copy()
-                    history[i]["content"] = f"{context_prefix}\n\n{history[i]['content']}"
+                    history[i]["content"] = f"{context_prefix}\n\n[user:]{history[i]['content']}"
                     break
             
             # 6. Translate history to provider format
