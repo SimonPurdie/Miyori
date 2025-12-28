@@ -46,7 +46,7 @@ class MiyoriCore:
         
         # Use tool-enabled generation when tools are available
         if self.tool_registry and self.tool_registry.get_all():
-             self._handle_with_tools(text, on_chunk)
+             self._handle_with_tools(text, source, on_chunk)
         else:
             # Fallback if no tools (though usually should have tools)
             self.llm.llm_chat(
@@ -58,7 +58,7 @@ class MiyoriCore:
                 source=source
             )
 
-    def _handle_with_tools(self, user_input: str, on_chunk: Callable[[str], None]) -> None:
+    def _handle_with_tools(self, user_input: str, source: str, on_chunk: Callable[[str], None]) -> None:
         """Handle user input with tool support."""
         from miyori.utils import logger
         
