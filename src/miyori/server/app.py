@@ -170,7 +170,7 @@ def start_voice_thread(speech_input: ISpeechInput):
                 if text is None:
                     continue
                 
-                print(f"Voice input detected: {text}")
+                #print(f"Voice input detected: {text}")
 
                 # 4. Submit to main loop for async processing
                 if main_loop:
