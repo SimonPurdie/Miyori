@@ -31,6 +31,8 @@ class MiyoriCore:
             source: "voice" or "text"
             on_chunk: Callback for streaming response chunks
         """
+        print(f"user ({source}): {text}")
+        
         # Update interaction time for both voice and text
         self.last_interaction_time = time.time()
         

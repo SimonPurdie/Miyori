@@ -128,7 +128,7 @@ class PorcupineCobraVosk(ISpeechInput):
             
         text = result.get("text", "")
         if text:
-            print(f"user: {text}")
+            #print(f"user: {text}")
             return text
         
         print("Vosk could not understand audio.")
