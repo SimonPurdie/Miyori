@@ -19,7 +19,7 @@ class LLMCoordinator:
         call_provider_api_callback: Callable,
         parse_provider_response_callback: Callable,
         format_tool_result_callback: Callable,
-        max_tool_turns: int = 5
+        max_tool_turns: int = 12
     ):
         self.chat_history = chat_history
         self._translate_to_provider = translate_to_provider_callback
