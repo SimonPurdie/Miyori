@@ -28,6 +28,9 @@ def run_consolidation(db_path: Optional[str] = None, verbose: bool = True) -> bo
         from miyori.memory.deep_layers import SemanticExtractor
         from miyori.memory.episodic import EpisodicMemoryManager
         from miyori.memory.sqlite_store import SQLiteMemoryStore
+        from miyori.memory.memory_retriever import MemoryRetriever
+        from miyori.memory.confidence_manager import ConfidenceManager
+        from miyori.memory.merge_manager import MergeManager
         from miyori.utils.embeddings import EmbeddingService
         from miyori.utils.config import Config
 
@@ -73,11 +76,28 @@ def run_consolidation(db_path: Optional[str] = None, verbose: bool = True) -> bo
         if verbose:
             print("OK: Semantic extractor initialized")
 
-        # Setup consolidation manager
+        # Setup memory retriever for confidence/merge managers
+        retriever = MemoryRetriever(store)
+        if verbose:
+            print("OK: Memory retriever initialized")
+
+        # Setup confidence manager
+        confidence_manager = ConfidenceManager(store, retriever, llm_client=client)
+        if verbose:
+            print("OK: Confidence manager initialized")
+
+        # Setup merge manager
+        merge_manager = MergeManager(store, retriever, llm_client=client)
+        if verbose:
+            print("OK: Merge manager initialized")
+
+        # Setup consolidation manager with all components
         consolidation_manager = ConsolidationManager(
             store=store,
             episodic_manager=episodic_manager,
-            semantic_extractor=semantic_extractor
+            semantic_extractor=semantic_extractor,
+            confidence_manager=confidence_manager,
+            merge_manager=merge_manager
         )
         if verbose:
             print("OK: Consolidation manager initialized")

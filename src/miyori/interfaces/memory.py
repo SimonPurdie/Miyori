@@ -43,3 +43,18 @@ class IMemoryStore(ABC):
     def get_semantic_facts(self, status: str = 'stable', limit: int = 10) -> List[Dict[str, Any]]:
         """Retrieve established facts about the user."""
         pass
+
+    @abstractmethod
+    def update_semantic_fact(self, fact_id: str, updates: Dict[str, Any]) -> bool:
+        """Update fields of an existing semantic fact (e.g., confidence, status)."""
+        pass
+
+    @abstractmethod
+    def get_all_active_facts(self, min_confidence: Optional[float] = None) -> List[Dict[str, Any]]:
+        """Get all active/stable facts for batch operations like merging."""
+        pass
+
+    @abstractmethod
+    def archive_merged_facts(self, loser_ids: List[str], winner_id: str) -> bool:
+        """Archive facts that have been merged into a canonical fact."""
+        pass

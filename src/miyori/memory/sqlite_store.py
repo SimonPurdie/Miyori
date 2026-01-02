@@ -49,7 +49,9 @@ class SQLiteMemoryStore(IMemoryStore):
                     derived_from TEXT,    -- JSON string
                     contradictions TEXT,  -- JSON string
                     status TEXT,
-                    embedding BLOB
+                    embedding BLOB,
+                    evidence_count INTEGER DEFAULT 0,
+                    merged_into_id TEXT DEFAULT NULL
                 )
             """)
 
@@ -64,7 +66,22 @@ class SQLiteMemoryStore(IMemoryStore):
             if cursor.fetchone()[0] == 0:
                 cursor.execute("INSERT INTO schema_version (version) VALUES (1)")
             
+            # Add new columns if they don't exist (for existing databases)
+            self._migrate_semantic_memory_columns(cursor)
+            
             conn.commit()
+
+    def _migrate_semantic_memory_columns(self, cursor):
+        """Add new columns to semantic_memory if they don't exist."""
+        # Check existing columns
+        cursor.execute("PRAGMA table_info(semantic_memory)")
+        existing_columns = {row[1] for row in cursor.fetchall()}
+        
+        if 'evidence_count' not in existing_columns:
+            cursor.execute("ALTER TABLE semantic_memory ADD COLUMN evidence_count INTEGER DEFAULT 0")
+        
+        if 'merged_into_id' not in existing_columns:
+            cursor.execute("ALTER TABLE semantic_memory ADD COLUMN merged_into_id TEXT DEFAULT NULL")
 
     def add_episode(self, episode_data: Dict[str, Any]) -> str:
         episode_id = episode_data.get('id') or str(uuid.uuid4())
@@ -274,8 +291,9 @@ class SQLiteMemoryStore(IMemoryStore):
             cursor.execute("""
                 INSERT OR REPLACE INTO semantic_memory (
                     id, fact, confidence, first_observed, last_confirmed,
-                    version_history, derived_from, contradictions, status, embedding
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    version_history, derived_from, contradictions, status, embedding,
+                    evidence_count, merged_into_id
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 fact_id,
                 fact_data.get('fact'),
@@ -286,7 +304,9 @@ class SQLiteMemoryStore(IMemoryStore):
                 json.dumps(fact_data.get('derived_from', [])),
                 json.dumps(fact_data.get('contradictions', [])),
                 fact_data.get('status', 'stable'),
-                fact_data.get('embedding')  # Already in bytes format
+                fact_data.get('embedding'),  # Already in bytes format
+                fact_data.get('evidence_count', 0),
+                fact_data.get('merged_into_id')
             ))
             conn.commit()
         return fact_id
@@ -309,3 +329,96 @@ class SQLiteMemoryStore(IMemoryStore):
                 data['embedding'] = np.frombuffer(data['embedding'], dtype=np.float32).tolist()
             results.append(data)
         return results
+
+    def update_semantic_fact(self, fact_id: str, updates: Dict[str, Any]) -> bool:
+        """Update fields of an existing semantic fact."""
+        if not updates:
+            return False
+        
+        set_parts = []
+        values = []
+        for key, value in updates.items():
+            if key in ['version_history', 'derived_from', 'contradictions']:
+                set_parts.append(f"{key} = ?")
+                values.append(json.dumps(value))
+            elif key == 'embedding' and isinstance(value, (list, np.ndarray)):
+                set_parts.append(f"{key} = ?")
+                values.append(np.array(value, dtype=np.float32).tobytes())
+            else:
+                set_parts.append(f"{key} = ?")
+                values.append(value)
+        
+        values.append(fact_id)
+        query = f"UPDATE semantic_memory SET {', '.join(set_parts)} WHERE id = ?"
+        
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute(query, tuple(values))
+            conn.commit()
+            
+            from miyori.utils.memory_logger import memory_logger
+            memory_logger.log_event("db_update_semantic_fact", {
+                "id": fact_id,
+                "updates": list(updates.keys()),
+                "success": cursor.rowcount > 0
+            })
+            return cursor.rowcount > 0
+
+    def get_all_active_facts(self, min_confidence: Optional[float] = None) -> List[Dict[str, Any]]:
+        """Get all active/stable facts for batch operations."""
+        with self._get_connection() as conn:
+            conn.row_factory = sqlite3.Row
+            cursor = conn.cursor()
+            
+            if min_confidence is not None:
+                cursor.execute(
+                    "SELECT * FROM semantic_memory WHERE status IN ('stable', 'tentative') AND confidence >= ?",
+                    (min_confidence,)
+                )
+            else:
+                cursor.execute(
+                    "SELECT * FROM semantic_memory WHERE status IN ('stable', 'tentative')"
+                )
+            rows = cursor.fetchall()
+        
+        results = []
+        for row in rows:
+            data = dict(row)
+            data['version_history'] = json.loads(data['version_history'])
+            data['derived_from'] = json.loads(data['derived_from'])
+            data['contradictions'] = json.loads(data['contradictions'])
+            # Keep embedding as bytes for vector operations
+            results.append(data)
+        
+        from miyori.utils.memory_logger import memory_logger
+        memory_logger.log_event("db_get_all_active_facts", {
+            "min_confidence": min_confidence,
+            "returned_count": len(results)
+        })
+        return results
+
+    def archive_merged_facts(self, loser_ids: List[str], winner_id: str) -> bool:
+        """Archive facts that have been merged into a canonical fact."""
+        if not loser_ids:
+            return True
+        
+        now = datetime.now().isoformat()
+        with self._get_connection() as conn:
+            cursor = conn.cursor()
+            placeholders = ','.join('?' * len(loser_ids))
+            cursor.execute(f"""
+                UPDATE semantic_memory
+                SET status = 'merged_into',
+                    merged_into_id = ?,
+                    last_confirmed = ?
+                WHERE id IN ({placeholders})
+            """, [winner_id, now] + loser_ids)
+            conn.commit()
+            
+            from miyori.utils.memory_logger import memory_logger
+            memory_logger.log_event("db_archive_merged_facts", {
+                "winner_id": winner_id,
+                "loser_count": len(loser_ids),
+                "success": cursor.rowcount > 0
+            })
+            return cursor.rowcount > 0

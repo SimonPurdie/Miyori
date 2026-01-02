@@ -133,18 +133,27 @@ class ContradictionDetector:
 
     def detect_conflicts(self, new_fact: str) -> List[Dict[str, Any]]:
         """Check if a new fact contradicts existing semantic memory."""
-        # NONFUNCTIONAL PLACEHOLDER
+        # DEPRECATED: Now handled by ConfidenceManager.detect_contradictions()
         facts = self.store.get_semantic_facts()
         conflicts = []
             
         return conflicts
 
 class ConsolidationManager:
-    def __init__(self, store, episodic_manager, semantic_extractor):
+    def __init__(
+        self,
+        store,
+        episodic_manager,
+        semantic_extractor,
+        confidence_manager=None,
+        merge_manager=None
+    ):
         self.store = store
         self.episodic_manager = episodic_manager
         self.semantic_extractor = semantic_extractor
         self.clustering = EpisodeClustering()
+        self.confidence_manager = confidence_manager
+        self.merge_manager = merge_manager
 
     async def perform_consolidation(self):
         """Nightly consolidation task using clustering for intelligent batching."""
@@ -155,32 +164,55 @@ class ConsolidationManager:
 
         if not episodes:
             print("No unconsolidated episodes found.")
-            return
+        else:
+            print(f"Found {len(episodes)} unconsolidated episodes.")
 
-        print(f"Found {len(episodes)} unconsolidated episodes.")
+            processed_episode_ids = []
+            batches = self.clustering.create_consolidation_batches(episodes)
+            print(f"Created {len(batches)} batches from {len(episodes)} episodes.")
 
-        processed_episode_ids = []
-        batches = self.clustering.create_consolidation_batches(episodes)
-        print(f"Created {len(batches)} batches from {len(episodes)} episodes.")
-
-        for i, batch in enumerate(batches):
-            print(f"Processing batch {i+1}/{len(batches)} with {batch['total_episodes']} episodes across {len(batch['clusters'])} clusters...")
-        
-            # Extract facts with cluster structure preserved
-            await self.semantic_extractor.extract_facts_from_batch(batch['clusters'])
+            for i, batch in enumerate(batches):
+                print(f"Processing batch {i+1}/{len(batches)} with {batch['total_episodes']} episodes across {len(batch['clusters'])} clusters...")
             
-            # Mark episodes as consolidated
-            all_episode_ids = [ep['id'] for cluster in batch['clusters'] for ep in cluster]
-            processed_episode_ids.extend(all_episode_ids)
+                # Extract facts with cluster structure preserved
+                await self.semantic_extractor.extract_facts_from_batch(batch['clusters'])
+                
+                # Mark episodes as consolidated
+                all_episode_ids = [ep['id'] for cluster in batch['clusters'] for ep in cluster]
+                processed_episode_ids.extend(all_episode_ids)
 
-        if processed_episode_ids:
-            success = self.store.mark_episodes_consolidated(processed_episode_ids)
-            if success:
-                print(f"Marked {len(processed_episode_ids)} episodes as consolidated.")
-            else:
-                print("Warning: Failed to mark some episodes as consolidated.")
+            if processed_episode_ids:
+                success = self.store.mark_episodes_consolidated(processed_episode_ids)
+                if success:
+                    print(f"Marked {len(processed_episode_ids)} episodes as consolidated.")
+                else:
+                    print("Warning: Failed to mark some episodes as consolidated.")
 
-        # 6. Cleanup/Archive old mundane ones
-        # (Already handled by budget, but can add more specific logic here)
+        # 2. Run confidence updates if manager is available
+        if self.confidence_manager:
+            print("\n--- Updating Fact Confidences ---")
+            try:
+                confidence_results = self.confidence_manager.update_all_confidences()
+                print(f"Confidence updates: {confidence_results['updated_count']} facts updated")
+                print(f"  Evidence boosts: {confidence_results['evidence_boosts']}")
+                print(f"  Time decays: {confidence_results['time_decays']}")
+                print(f"  Clear contradictions: {confidence_results['clear_contradictions']}")
+                print(f"  Ambiguous contradictions: {confidence_results['ambiguous_contradictions']}")
+                print(f"  Auto-deprecated: {confidence_results['deprecated_count']} facts")
+            except Exception as e:
+                print(f"Warning: Confidence update failed: {e}")
 
-        print("Memory Consolidation Complete.")
+        # 3. Run merge cycle if manager is available
+        if self.merge_manager:
+            print("\n--- Merging Duplicate Facts ---")
+            try:
+                merge_results = self.merge_manager.run_merge_cycle()
+                print(f"Merge results: {merge_results['clusters_found']} clusters found")
+                print(f"  Auto-merged: {merge_results['auto_merged']} clusters")
+                print(f"  LLM-reviewed: {merge_results['queued_for_llm']} clusters")
+                print(f"  Facts archived: {merge_results['facts_archived']}")
+            except Exception as e:
+                print(f"Warning: Merge cycle failed: {e}")
+
+        print("\nMemory Consolidation Complete.")
+
