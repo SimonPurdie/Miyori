@@ -6,7 +6,7 @@ that takes a prompt and a callback, streaming AI-generated response chunks.
 """
 
 from abc import ABC, abstractmethod
-from typing import Callable, List, Dict, Any
+from typing import Callable, List, Dict, Any, Optional
 from miyori.core.tools import Tool
 
 

@@ -1,6 +1,6 @@
 from google import genai
 from google.genai import types
-from typing import Callable, List, Dict, Any, Union
+from typing import Callable, List, Dict, Any, Union, Optional
 import asyncio
 import threading
 
