@@ -138,6 +138,18 @@ class LLMCoordinator:
                 # Parse response
                 parsed = self._parse_provider_response(response)
                 text = parsed.get("text", "")
+                thought = parsed.get("thought", "")
+                tool_calls = parsed.get("tool_calls", [])
+                
+                # Stream thought chunks if present
+                if thought:
+                    on_chunk(f"\nmiyori (thinking): {thought}\n")
+
+                # Stream text chunks
+                if text:
+                    full_response_text.append(text)
+                    on_chunk(text)
+                text = parsed.get("text", "")
                 tool_calls = parsed.get("tool_calls", [])
                 
                 # Stream text chunks
