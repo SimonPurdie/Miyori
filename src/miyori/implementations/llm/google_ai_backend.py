@@ -123,8 +123,7 @@ class GoogleAIBackend(ILLMBackend):
         )
         self.token_monitor = TokenMonitor(
             window_seconds=60, 
-            tpm_limit=1000000, 
-            backoff_threshold=800000
+            tpm_limit=1000000,
         )
 
         
