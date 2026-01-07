@@ -211,7 +211,12 @@ class GoogleAIBackend(ILLMBackend):
         # Static config for Gemini
         config = types.GenerateContentConfig(
             system_instruction=self.system_instruction if self.system_instruction else None,
-            tools=google_tools if google_tools else None
+            tools=google_tools if google_tools else None,
+            thinking_config=types.ThinkingConfig(
+                # NOTE: If using Gemini 2.5 models, use 'thinking_budget' instead:
+                include_thoughts=True,
+                thinking_level="high"
+            )
         )
 
         def store_turn_wrapper(u, m):
