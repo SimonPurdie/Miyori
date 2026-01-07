@@ -50,5 +50,5 @@ Used for research-heavy tasks. Store technical documentation, code snippets, or 
 
 ## 3. Best Practices
 - **Verbal Leaness**: Keep conversational responses brief. Point the user to the plan file for detailed progress.
-- **Error Logging**: Every failed command or rejected edit must be logged in the plan with a "Resolution" attempt.
+- **Error Logging**: Every failed command or rejected write must be logged in the plan with a "Resolution" attempt.
 - **Context Management**: If a file read returns massive data, summarize it in the chat and save the full version to `notes.md`.

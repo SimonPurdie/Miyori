@@ -11,9 +11,6 @@ Provides comprehensive access to the workspace and project files.
     - **Paginated Reading**: Use `offset` and `limit` for large files.
     - **Binary Detection**: Automatically detects and profiles binary files (images, executables) instead of dumping raw data.
 - **`write`**: Creates or overwrites files.
-- **`edit`**: Performs surgical modifications.
-    - **`line`**: Insert or replace content at a specific line number.
-    - **`search_replace`**: Finds a text block and replaces it. **Validates** existence of the search string before modifying.
 
 ### Safety:
 - Operations are restricted to the project root and specific allowed directories.
@@ -33,5 +30,5 @@ Allows execution of shell commands (bash/zsh/cmd) in the local environment.
 
 ## 3. Best Practices
 - **Diagnostic Listing**: Always `list` a directory before searching for or creating a file to confirm the path.
-- **Surgical Edits**: Prefer `edit` with `search_replace` over `write` for existing files to avoid losing content.
+- **Read-Modify-Write-Verify**: Always read a file completely, modify in memory, write back, and then read again to verify changes.
 - **Verification**: Use `terminal` to run tests (e.g., `pytest` or `uv run tests/...`) after modifying core files.

@@ -196,80 +196,6 @@ def _write_file(path: str, content: str, mode: str = "overwrite") -> str:
     except Exception as e:
         return f"Error writing file: {str(e)}"
 
-def _edit_file(path: str, edit_type: str, **kwargs) -> str:
-    """Edit a file with surgical precision."""
-    target_path = Path(path)
-    if not target_path.is_absolute():
-        target_path = (PROJECT_ROOT / path).resolve()
-
-    if not _is_path_allowed(target_path):
-        return f"Error: Access denied. Edit operations are restricted to the project root directory: {PROJECT_ROOT}"
-
-    try:
-        # Read the current content
-        with open(target_path, 'r', encoding='utf-8') as f:
-            content = f.read()
-
-        lines = content.splitlines(keepends=True)
-        modified = False
-
-        if edit_type == "line":
-            line_number = kwargs.get('line_number', 1) - 1  # Convert to 0-based
-            action = kwargs.get('action', 'replace')
-            new_content = kwargs.get('content', '')
-
-            if line_number < 0 or line_number > len(lines):
-                return f"Error: Line number {line_number + 1} is out of range (1-{len(lines)})"
-
-            if action == "insert":
-                # Insert before the specified line
-                lines.insert(line_number, new_content + '\n')
-                modified = True
-            elif action == "replace":
-                if line_number < len(lines):
-                    lines[line_number] = new_content + ('\n' if not new_content.endswith('\n') else '')
-                    modified = True
-                else:
-                    return f"Error: Cannot replace line {line_number + 1}, file only has {len(lines)} lines"
-
-        elif edit_type == "search_replace":
-            old_string = kwargs.get('old_string', '')
-            new_string = kwargs.get('new_string', '')
-            multiline = kwargs.get('multiline', False)
-
-            if not old_string:
-                return "Error: 'old_string' parameter is required for search_replace"
-
-            if multiline:
-                # Multi-line replacement
-                if old_string in content:
-                    new_content = content.replace(old_string, new_string, 1)  # Replace only first occurrence
-                    modified = True
-                else:
-                    return f"Error: Search string not found in file:\n{old_string}"
-            else:
-                # Single-line replacement (split by lines but keep line endings)
-                found = False
-                for i, line in enumerate(lines):
-                    if old_string in line:
-                        lines[i] = line.replace(old_string, new_string, 1)  # Replace only first occurrence per line
-                        found = True
-                        modified = True
-                        break
-                if not found:
-                    return f"Error: Search string '{old_string}' not found in file"
-
-        if modified:
-            # Write back the modified content
-            with open(target_path, 'w', encoding='utf-8') as f:
-                f.writelines(lines)
-            return f"✓ Successfully edited {target_path.name}"
-        else:
-            return "No changes made"
-
-    except Exception as e:
-        return f"Error editing file: {str(e)}"
-
 def _list_directory(path: str, offset: int = 0) -> str:
     """List directory contents with adaptive summaries and pagination."""
     target_path = Path(path)
@@ -323,27 +249,21 @@ def _list_directory(path: str, offset: int = 0) -> str:
     except Exception as e:
         return f"Error listing directory: {str(e)}"
 
-def file_operations(operation: str, path: str, content: str = None, offset: int = 0, limit: int = 5000, mode: str = "overwrite", force: bool = False, edit_type: str = None, line_number: int = None, action: str = None, old_string: str = None, new_string: str = None, multiline: bool = False) -> str:
+def file_operations(operation: str, path: str, content: str = None, offset: int = 0, limit: int = 5000, mode: str = "overwrite", force: bool = False) -> str:
     """
-    Perform file operations (read, write, list, or edit).
+    Perform file operations (read, write, or list).
 
     Args:
-        operation: Either "read", "write", "list", or "edit"
+        operation: Either "read", "write", or "list"
         path: Path to the file or directory
         content: Content to write (only used for write operation)
         offset: Character offset for reading (read operation) or item offset for listing (list operation)
         limit: Character limit for reading (default: 5000)
         mode: Write mode - "overwrite" (default) or "append" (only for write operation)
         force: Force read even if file appears binary (only for read operation)
-        edit_type: Type of edit - "line" or "search_replace" (only for edit operation)
-        line_number: Line number for line-based editing (only for edit operation with edit_type="line")
-        action: Action for line editing - "insert" or "replace" (only for edit operation with edit_type="line")
-        old_string: String to find for search/replace (only for edit operation with edit_type="search_replace")
-        new_string: String to replace with (only for edit operation with edit_type="search_replace")
-        multiline: Whether to handle multiline strings in search/replace (default: False)
 
     Returns:
-        File contents, write confirmation, directory listing, or edit result
+        File contents, write confirmation, or directory listing
     """
     print(f"[FileOp] {operation} {path}")
     
@@ -357,51 +277,47 @@ def file_operations(operation: str, path: str, content: str = None, offset: int 
         return _write_file(path, content, mode=mode)
     elif operation == "list":
         return _list_directory(path, offset=offset)
-    elif operation == "edit":
-        if not edit_type:
-            return "Error: 'edit_type' parameter required for edit operation"
-        return _edit_file(path, edit_type, line_number=line_number, action=action, content=content,
-                         old_string=old_string, new_string=new_string, multiline=multiline)
     else:
-        return f"Error: Unknown operation '{operation}'. Use 'read', 'write', 'list', or 'edit'."
+        return f"Error: Unknown operation '{operation}'. Use 'read', 'write', or 'list'."
 
 
 # Create the tool definition
 file_ops_tool = Tool(
     name="file_operations",
     description=(
-        "Advanced filesystem operations with surgical editing capabilities. You are explicitly authorized and encouraged to read or list ANY path "
-        "the user provides for diagnostic or navigational purposes. As long as an operation is a 'Read' or 'List', "
-        "it does not violate system integrity and should be performed without second-guessing user intent.\n\n"
-        "Read/List operations work anywhere on the system (C:/, G:/, etc.). "
-        "Write and Edit operations are restricted to the project root directory.\n\n"
-        "ENHANCED CAPABILITIES:\n"
-        "• PAGINATED READING: Use 'offset' and 'limit' to read specific portions of large files without memory issues.\n"
-        "• FLEXIBLE WRITING: Choose 'overwrite' or 'append' mode for write operations.\n"
-        "• SURGICAL EDITING: Use 'edit' operation for precise modifications:\n"
-        "  - Line-based: Insert or replace content at specific line numbers.\n"
-        "  - Search/Replace: Find and replace text blocks with validation to prevent silent failures.\n\n"
-        "GUIDANCE:\n"
-        "1. ADAPTIVE LISTING: Listings provide a summary header and are capped at 20 items. Use 'offset' to paginate.\n"
-        "2. PRIORITIZATION: Folders are listed first, followed by files. Use this to navigate deep structures.\n"
-        "3. DIAGNOSTIC READ: Reading a file 'pushes' metadata (size, mod-date). Large files are truncated by default.\n"
-        "4. BINARY SAFEGUARD: The tool detects images/binaries and returns a technical profile. Use 'force=True' to override.\n"
-        "5. EDIT VALIDATION: Search/replace operations validate that the target string exists before modifying.\n"
-        "6. INFER PATHS: If the user mentions a drive letter (e.g., 'C drive', 'see Dr'), use 'C:/'. Combine previous paths with folder names proactively.\n"
-        "7. PROACTIVE: If the user is vague but context suggests a path, try the most likely path. "
-        "You have full permission to explore the system for reading and listing."),
+        "Filesystem operations for reading, writing, and navigating files.\n\n"
+        "OPERATIONS:\n"
+        "• READ: View file contents with pagination (offset/limit)\n"
+        "• WRITE: Create or overwrite files (mode: 'overwrite' or 'append')\n"
+        "• LIST: Browse directory contents with pagination\n\n"
+        "FILE EDITING PATTERN:\n"
+        "To modify a file:\n"
+        "1. Read the file: operation='read', path='file.py'\n"
+        "2. Modify the content in memory\n"
+        "3. Write it back: operation='write', path='file.py', content='...'\n\n"
+        "This pattern is reliable and prevents issues with stale line numbers "
+        "or string matching failures.\n\n"
+        "PERMISSIONS:\n"
+        "• Read/List: Works anywhere on the filesystem\n"
+        "• Write: Restricted to project root directory\n\n"
+        "FEATURES:\n"
+        "• Paginated reading for large files (use offset/limit)\n"
+        "• Binary detection with diagnostic headers\n"
+        "• Automatic directory creation for new files\n"
+        "• Cross-platform path handling\n"
+    ),
     parameters=[
         ToolParameter(
             name="operation",
             type="string",
-            description="Operation to perform: 'read', 'write', 'list', or 'edit'",
+            description="Operation to perform: 'read', 'write', or 'list'",
             required=True,
-            enum=["read", "write", "list", "edit"]
+            enum=["read", "write", "list"]
         ),
         ToolParameter(
             name="path",
             type="string",
-            description="File or directory path. Can be absolute (e.g., 'C:/Users/...') or relative to project root.",
+            description="File or directory path. Can be absolute or relative to project root.",
             required=True
         ),
         ToolParameter(
@@ -413,7 +329,7 @@ file_ops_tool = Tool(
         ToolParameter(
             name="offset",
             type="integer",
-            description="Character offset for reading (read operation) or item offset for listing (list operation, default: 0)",
+            description="Character offset for reading or item offset for listing (default: 0)",
             required=False
         ),
         ToolParameter(
@@ -433,44 +349,6 @@ file_ops_tool = Tool(
             name="force",
             type="boolean",
             description="Force reading a file even if detected as binary (default: false, only for read operation)",
-            required=False
-        ),
-        ToolParameter(
-            name="edit_type",
-            type="string",
-            description="Type of edit: 'line' or 'search_replace' (only for edit operation)",
-            required=False,
-            enum=["line", "search_replace"]
-        ),
-        ToolParameter(
-            name="line_number",
-            type="integer",
-            description="Line number for line-based editing (only for edit operation with edit_type='line')",
-            required=False
-        ),
-        ToolParameter(
-            name="action",
-            type="string",
-            description="Action for line editing: 'insert' or 'replace' (only for edit operation with edit_type='line')",
-            required=False,
-            enum=["insert", "replace"]
-        ),
-        ToolParameter(
-            name="old_string",
-            type="string",
-            description="String to find for search/replace (only for edit operation with edit_type='search_replace')",
-            required=False
-        ),
-        ToolParameter(
-            name="new_string",
-            type="string",
-            description="String to replace with (only for edit operation with edit_type='search_replace')",
-            required=False
-        ),
-        ToolParameter(
-            name="multiline",
-            type="boolean",
-            description="Whether to handle multiline strings in search/replace (default: false, only for edit operation)",
             required=False
         )
     ],
