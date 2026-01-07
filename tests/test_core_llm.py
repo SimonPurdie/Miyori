@@ -80,7 +80,8 @@ def test_llm_coordinator():
     # If no tool calls: 1. user, 2. call, 3. parse, 4. add miyori.
     assert len(history.msgs) == 2
     assert "Test prompt" in history.msgs[0]["content"]
-    assert "[CONTEXT:" in history.msgs[0]["content"]
+    # Context is now added at generation time, not stored in history
+    # assert "[CONTEXT:" in history.msgs[0]["content"]
     assert history.msgs[1]["content"] == "Hello world"
     
     print("LLMCoordinator tests passed!")
