@@ -369,18 +369,15 @@ class GoogleAIBackend(ILLMBackend):
         """Makes stateless API call to Google's generate_content."""
         # 1. Estimate incoming tokens for predictive backoff
         try:
-            # We don't need tools/system_instruction for token counting usually, 
-            # but providing them ensures higher accuracy.
             estimate = self.client.models.count_tokens(
                 model=self.model_name,
-                contents=provider_messages,
-                config=config
+                contents=provider_messages
             )
             incoming_tokens = estimate.total_tokens
         except Exception as e:
-            # Fallback to a safe guess (roughly 20% of window) if estimation fails
+            # Fallback to a safe guess (near max window size) if estimation fails
             print(f"TokenMonitor: Estimation failed ({e}), using fallback.")
-            incoming_tokens = 5000 
+            incoming_tokens = 130000 
 
         # 2. Calculate and wait for necessary window space
         self.token_monitor.wait_until_available(incoming_tokens)
@@ -393,21 +390,6 @@ class GoogleAIBackend(ILLMBackend):
         )
 
         # 4. Record actual usage metadata for future calculations
-        if hasattr(response, 'usage_metadata') and response.usage_metadata:
-            self.token_monitor.record_usage(response.usage_metadata.total_token_count)
-
-        return response
-        """Makes stateless API call to Google's generate_content."""
-        # Check for necessary backoff
-        self.token_monitor.check_and_wait()
-
-        response = self.client.models.generate_content(
-            model=self.model_name,
-            contents=provider_messages,
-            config=config
-        )
-
-        # Record usage if available
         if hasattr(response, 'usage_metadata') and response.usage_metadata:
             self.token_monitor.record_usage(response.usage_metadata.total_token_count)
 
@@ -430,10 +412,7 @@ class GoogleAIBackend(ILLMBackend):
                         thought_parts.append(part.text)
                 elif hasattr(part, 'text') and part.text:
                     text_parts.append(part.text)
-                
-                if hasattr(part, 'thought') and part.thought:
-                    thought_parts.append(part.thought)
-                
+                    
                 if hasattr(part, 'function_call') and part.function_call:
                     tc_data = {
                         "id": str(uuid.uuid4())[:8],
